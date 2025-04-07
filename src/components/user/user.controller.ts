@@ -1,0 +1,135 @@
+import { Request, Response } from "express";
+import { ResponseHandler } from "../../utils/responseHandler.util";
+import UserService from "../user/user.service";
+import { ValidationResult } from "joi";
+import { validateUser } from "./user.validation";
+
+class UserController {
+  private userService: UserService;
+
+  constructor() {
+    this.userService = new UserService();
+  }
+
+  public updateUser = async (
+    request: Request,
+    response: Response
+  ): Promise<any> => {
+    try {
+      // if (!Object.keys(request.body).length || !request.body) {
+      //   return ResponseHandler.error(response, 400, "No body found!");
+      // }
+      const validationResult: ValidationResult<any> = await validateUser(
+        request.body
+      );
+      if (validationResult.error) {
+        const errorMessages = validationResult.error.details
+          .map((detail) => detail.message)
+          .join(", ");
+        console.log(errorMessages);
+        return ResponseHandler.error(response, 400, errorMessages);
+      }
+
+      const newUser = await this.userService.updateUser(request.body);
+      return ResponseHandler.success(
+        response,
+        201,
+        "user created successfully!",
+        newUser
+      );
+    } catch (error: any) {
+      return ResponseHandler.error(
+        response,
+        error.status || 500,
+        error.message || "Internal server error"
+      );
+    }
+  };
+
+  public deleteUser = async (
+    request: Request,
+    response: Response
+  ): Promise<any> => {
+    try {
+      const foundUser = await this.userService.deleteUser(request.params.id);
+      return ResponseHandler.success(
+        response,
+        200,
+        "User deleted successFully!"
+      );
+    } catch (error: any) {
+      return ResponseHandler.error(
+        response,
+        error.status || 500,
+        error.message || "internal server error"
+      );
+    }
+  };
+
+  public getUser = async (
+    request: Request,
+    response: Response
+  ): Promise<any> => {
+    try {
+      const foundUser = await this.userService.getUser(request.params.id);
+      return ResponseHandler.success(
+        response,
+        200,
+        "User fetch successFully!",
+        foundUser[0]
+      );
+    } catch (error: any) {
+      return ResponseHandler.error(
+        response,
+        error.status || 500,
+        error.message || "internal server error"
+      );
+    }
+  };
+
+  public getLoggedUser = async (
+    request: Request,
+    response: Response
+  ): Promise<any> => {
+    try {
+      const foundUser = await this.userService.getLoggedUser(
+        (request as any).userData
+      );
+      return ResponseHandler.success(
+        response,
+        200,
+        "User fetch successFully!",
+        foundUser[0]
+      );
+    } catch (error: any) {
+      return ResponseHandler.error(
+        response,
+        error.status || 500,
+        error.message || "internal server error"
+      );
+    }
+  };
+
+  public getAllUsers = async (
+    request: Request,
+    response: Response
+  ): Promise<any> => {
+    try {
+      const allUsers = await this.userService.getAllUser(request.query);
+      return ResponseHandler.success(
+        response,
+        200,
+        `Fetch ${allUsers.length} users`,
+        allUsers
+      );
+    } catch (error: any) {
+      return ResponseHandler.error(
+        response,
+        error.status || 500,
+        error.message || "internal server error"
+      );
+    }
+  };
+}
+
+export default new UserController();
