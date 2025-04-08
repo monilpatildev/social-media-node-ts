@@ -79,19 +79,7 @@ export const validateUser = (data: IUser, isPatch: boolean = false) => {
     bio: Joi.string().min(100).messages({
       "string.base": "bio must be a string",
       "string.min": "bio should have at least 100 characters",
-    }),
-    profile: Joi.object({
-      mimetype: Joi.string()
-        .valid(...allowedMimeTypes)
-        .messages({
-          "any.only": "Profile must be a JPG, PNG, WebP, or GIF image",
-          "any.required": "Profile image type is required",
-        }),
-      size: Joi.number().max(MAX_FILE_SIZE).required().messages({
-        "number.max": "Profile image size must not exceed 5MB",
-        "any.required": "Profile image size is required",
-      }),
-    }),
+    })
   });
 
   return userSchema.validate(data, {

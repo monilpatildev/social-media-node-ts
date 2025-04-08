@@ -1,12 +1,4 @@
-import { Express } from "express";
-import { Request } from "express";
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
-
-// declare namespace Express {
-//   export interface Request {
-//     user?: any;
-//   }
-// }
 
 export interface IUser extends Document {
   firstName: string;
@@ -17,8 +9,7 @@ export interface IUser extends Document {
   isDeleted: boolean;
   bio: string;
   profile: string;
-  followers: Types.ObjectId[];
-  following: Types.ObjectId[];
+  isPrivate: boolean;
 }
 
 const userSchema = new mongoose.Schema<IUser>(
@@ -56,13 +47,9 @@ const userSchema = new mongoose.Schema<IUser>(
     profile: {
       type: String,
     },
-    followers: {
-      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-      default: [],
-    },
-    following: {
-      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-      default: [],
+    isPrivate: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

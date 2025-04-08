@@ -1,15 +1,15 @@
 import { Router } from "express";
 import UserController from "./user.controller";
 import AuthMiddleware from "../../middleware/authVerification";
-// import upload from "../../utils/multer.util";
+import uploadProfileMiddleware from "../../utils/multerForProfile.util";
 
 const userRoute = Router();
 
 userRoute.get("/", AuthMiddleware.authenticate, UserController.getAllUsers);
 userRoute.patch(
-  "/:id",
+  "/profile",
   AuthMiddleware.authenticate,
-  // upload.single("profile"),
+  uploadProfileMiddleware,
   UserController.updateUser
 );
 userRoute.get(

@@ -1,8 +1,11 @@
+import { IUploadedFile } from "./../../common/interfaces";
 import UserDao from "./user.dao";
 import { IUser } from "./user.model";
 import passwordManager from "../../utils/password.util";
 import { isObjectIdOrHexString, Types } from "mongoose";
 import addToPipeline from "../../service/pipeline.service";
+import path from "path";
+import fs from "fs";
 
 class UserService {
   private userDao: UserDao;
@@ -55,12 +58,38 @@ class UserService {
     }
   };
 
-  public updateUser = async (userData: any): Promise<any> => {
+  public updateUser = async (
+    userData: any,
+    userId: any,
+    file?: IUploadedFile
+  ): Promise<any> => {
     try {
-      console.log(userData);
-      
+      const { _id } = userId;
+
+      if (file) {
+        const userDir = path.resolve(
+          __dirname,
+          "../../uploads/users-profile-picture",
+          _id
+        );
+        const filePath = path.join(userDir, file.originalname);
+
+        if (file.path !== filePath) {
+          fs.renameSync(file.path, filePath);
+        }
+        userData.profile = filePath;
+      }
+
+      const updatedUser = await this.userDao.updateUserById(_id, userData);
+      if (!updatedUser) {
+        throw { status: 500, message: "Internal server error" };
+      }
+      return updatedUser;
     } catch (error: any) {
-      throw error;
+      throw {
+        status: error.status || 500,
+        message: error.message || "Failed to update user",
+      };
     }
   };
 
@@ -139,7 +168,7 @@ class UserService {
 
       const queryArray = [query.name, query.username];
       const fieldsArray = ["firstName", "username"];
-  
+
       pipeline.push(addToPipeline(queryArray, fieldsArray));
 
       pipeline.push({

@@ -1,13 +1,13 @@
-import mongoose, { Document, Types } from "mongoose";
-
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 export interface IPost extends Document {
   title: string;
   description: string;
-  image: string[];
+  images: string[];
   postedBy: Types.ObjectId;
+  isDeleted: boolean;
 }
 
-const postSchema = new mongoose.Schema(
+const postSchema = new mongoose.Schema<IPost>(
   {
     title: {
       type: String,
@@ -16,13 +16,17 @@ const postSchema = new mongoose.Schema(
     description: {
       type: String,
     },
-    image: {
+    images: {
       type: [String],
       default: [],
     },
     postedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

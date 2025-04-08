@@ -3,6 +3,7 @@ import { config } from "dotenv";
 import { ResponseHandler } from "../utils/responseHandler.util";
 import UserDao from "../components/user/user.dao";
 import { NextFunction, Request, Response } from "express";
+import { Types } from "mongoose";
 config();
 
 class AuthMiddleware {
@@ -29,6 +30,8 @@ class AuthMiddleware {
             {
               $match: {
                 email: verifyRefreshToken.email,
+                _id: new Types.ObjectId(verifyRefreshToken._id),
+                isDeleted: false,
               },
             },
           ];

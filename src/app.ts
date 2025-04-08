@@ -4,6 +4,7 @@ import { config } from "dotenv";
 import { rateLimit } from "express-rate-limit";
 import path from "path";
 import multer from "multer";
+import cors from "cors";
 import MongoDBConnection from "./config/dbConnection";
 import InitialRoute from "./config/routes";
 import { ResponseHandler } from "./utils/responseHandler.util";
@@ -14,15 +15,23 @@ const app: Application = express();
 const PORT: number = parseInt(process.env.PORT || "4000", 10);
 const MONGODB_URI = process.env.MONGODB_URI as string;
 
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    methods: "GET,POST,PUT,PATCH,DELETE",
+    allowedHeaders: "Content-Type,Authorization",
+  })
+);
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 const limiter = rateLimit({
   windowMs: 60 * 1000,
   max: 100,
   message:
     "You cannot make more than 100 requests per minute from the same IP.",
 });
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-// app.use("/uploads", express.static("uploads"));
 app.use(limiter);
 
 app.use(
@@ -46,5 +55,3 @@ const server: Server = app.listen(PORT, async () => {
   InitialRoute.routes(app);
   console.log(`Server running on port ${PORT}`);
 });
-
-export default app;
