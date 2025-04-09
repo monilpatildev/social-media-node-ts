@@ -23,6 +23,18 @@ class PostDao {
       throw error;
     }
   };
+
+  public deletePost = async (id: string): Promise<any> => {
+    try {
+      return await PostModel.findByIdAndUpdate(
+        id,
+        { isDeleted: true },
+        { new: true }
+      );
+    } catch (error: any) {
+      throw error;
+    }
+  };
 }
 
 export default PostDao;

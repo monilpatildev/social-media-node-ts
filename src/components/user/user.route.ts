@@ -28,4 +28,30 @@ userRoute.delete(
   UserController.deleteUser
 );
 
+userRoute.post(
+  "/follow",
+  AuthMiddleware.authenticate,
+  UserController.followUser
+);
+
+userRoute.post(
+  "/unfollow",
+  AuthMiddleware.authenticate,
+  UserController.unfollowUser
+);
+
+userRoute.get(
+  "/get-requests",
+  AuthMiddleware.authenticate,
+  UserController.getFollowRequests
+);
+
+
+userRoute.post(
+  "/accept-request",
+  AuthMiddleware.authenticate,
+  UserController.acceptFollowRequest
+);
+
+
 export default userRoute;

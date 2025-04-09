@@ -20,7 +20,7 @@ class AuthService {
         throw { status: 400, message: "Email and password required" };
       }
 
-      const pipeline = [{ $match: { email } }];
+      const pipeline = [{ $match: { email, isDeleted: false } }];
       const user = await this.UserDao.getUserByIdOrEmail(pipeline);
 
       if (!user.length) {

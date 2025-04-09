@@ -1,23 +1,34 @@
-import { required } from "joi";
 import mongoose, { Document, Model, Types } from "mongoose";
 
-interface IFollow extends Document {
+export interface IFollow extends Document {
   userId: Types.ObjectId;
   followingId: Types.ObjectId;
-  requested: boolean;
+  status: "pending" | "accepted";
 }
 
-const followSchema = new mongoose.Schema<IFollow>({
-  userId: { type: new mongoose.Schema.Types.ObjectId(), required: true },
-  followingId: { type: new mongoose.Schema.Types.ObjectId(), required: true },
-  requested: {
-    type: Boolean,
-    default: true,
+const followSchema = new mongoose.Schema<IFollow>(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    followingId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ["pending", "accepted"],
+      default: "pending",
+    },
   },
-});
+  { timestamps: true }
+);
 
 const FollowModel: Model<IFollow> = mongoose.model<IFollow>(
-  "follow",
+  "Follow",
   followSchema
 );
 

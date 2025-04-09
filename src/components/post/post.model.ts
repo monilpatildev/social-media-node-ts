@@ -1,7 +1,8 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
+
 export interface IPost extends Document {
   title: string;
-  description: string;
+  description?: string;
   images: string[];
   postedBy: Types.ObjectId;
   isDeleted: boolean;
@@ -21,8 +22,9 @@ const postSchema = new mongoose.Schema<IPost>(
       default: [],
     },
     postedBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
+      required: true,
     },
     isDeleted: {
       type: Boolean,

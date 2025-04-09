@@ -19,7 +19,13 @@ class UserDao {
 
   public deleteUserById = async (id: string): Promise<any> => {
     try {
-      return await UserModel.findByIdAndDelete(id);
+      return await UserModel.findByIdAndUpdate(
+        id,
+        { isDeleted: true },
+        {
+          new: true,
+        }
+      );
     } catch (error: any) {
       throw error;
     }

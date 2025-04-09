@@ -79,13 +79,13 @@ class PostController {
       );
     }
   };
-  
+
   public getPost = async (
     request: Request,
     response: Response
   ): Promise<any> => {
     try {
-      const foundPost = await this.postService.getPost(request.params.id);
+      const foundPost = await this.postService.getPost(request.params.id,(request as any).userData._id);
       return ResponseHandler.success(
         response,
         200,
@@ -100,8 +100,49 @@ class PostController {
       );
     }
   };
-  public getAllPost = async () => {};
-  public deletePost = async () => {};
+  public getAllPost = async (
+    request: Request,
+    response: Response
+  ): Promise<any> => {
+    try {
+      const foundPost = await this.postService.getAllPost((request as any).userData._id );
+      return ResponseHandler.success(
+        response,
+        200,
+        "Posts fetch successFully!",
+        foundPost
+      );
+    } catch (error: any) {
+      return ResponseHandler.error(
+        response,
+        error.status || 500,
+        error.message || "Internal server error"
+      );
+    }
+  };
+  public deletePost = async (
+    request: Request,
+    response: Response
+  ): Promise<any> => {
+    try {
+      const foundPost = await this.postService.deletePost(
+        request.params.id,
+        (request as any).userData
+      );
+      return ResponseHandler.success(
+        response,
+        200,
+        "Post deleted successFully!",
+        foundPost[0]
+      );
+    } catch (error: any) {
+      return ResponseHandler.error(
+        response,
+        error.status || 500,
+        error.message || "Internal server error"
+      );
+    }
+  };
 }
 
 export default new PostController();

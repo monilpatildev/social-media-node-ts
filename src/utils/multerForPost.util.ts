@@ -4,6 +4,10 @@ import { existsSync, promises as fs, mkdirSync } from "fs";
 import path, { resolve as pathResolve } from "path";
 import { ResponseHandler } from "./responseHandler.util";
 
+interface MulterRequest extends Request {
+  isFolderCleared?: boolean;
+}
+
 type DestinationCallback = (error: Error | null, destination: string) => void;
 type FileNameCallback = (error: Error | null, filename: string) => void;
 
@@ -17,28 +21,32 @@ const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 const fileStorage = multer.diskStorage({
   destination: async (
-    request: Request,
+    request: MulterRequest, 
     file: Express.Multer.File,
-    callback: DestinationCallback
+    callback: (error: Error | null, destination: string) => void
   ): Promise<void> => {
     try {
-      const user = (request as any).userData;
-      const userDir = pathResolve(
-        __dirname,
-        `../uploads/users-post/${user._id}`
-      );
-      await fs.mkdir(userDir, { recursive: true });
+      const user = (request as any).userData; 
 
-      const postDir = pathResolve(
-        __dirname,
-        `../uploads/users-post/${user._id}/${
-          !request.params.id ? user._id : request.params.id
-        }`
-      );
-      console.log(request.params.id, postDir);
-      
-      await fs.mkdir(postDir, { recursive: true });
-      callback(null, postDir);
+      if (request.params.id) {
+        const postDir = pathResolve(
+          __dirname,
+          `../uploads/users-post/${user._id}/${request.params.id}`
+        );
+        if (!request.isFolderCleared) {
+          await fs.rm(postDir, { recursive: true, force: true });
+          await fs.mkdir(postDir, { recursive: true });
+          request.isFolderCleared = true;
+        }
+        callback(null, postDir);
+      } else {
+        const postDir = pathResolve(
+          __dirname,
+          `../uploads/users-post/${user._id}/${user._id}`
+        );
+        await fs.mkdir(postDir, { recursive: true });
+        callback(null, postDir);
+      }
     } catch (error) {
       callback(error as Error, "");
     }
@@ -46,7 +54,7 @@ const fileStorage = multer.diskStorage({
   filename: (
     request: Request,
     file: Express.Multer.File,
-    callback: FileNameCallback
+    callback: (error: Error | null, filename: string) => void
   ): void => {
     callback(null, file.originalname);
   },
@@ -61,6 +69,7 @@ const upload = multer({
     cb(null, true);
   },
 });
+
 
 export const updateFileName = (userId: string, postId: string): string => {
   const postDir = pathResolve(

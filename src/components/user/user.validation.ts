@@ -79,7 +79,11 @@ export const validateUser = (data: IUser, isPatch: boolean = false) => {
     bio: Joi.string().min(100).messages({
       "string.base": "bio must be a string",
       "string.min": "bio should have at least 100 characters",
-    })
+    }),
+    isPrivate: Joi.boolean().messages({
+      "boolean.base": "isPrivate must be true or false",
+      "any.required": "isPrivate is required",
+    }),
   });
 
   return userSchema.validate(data, {
