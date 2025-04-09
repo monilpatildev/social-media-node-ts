@@ -26,16 +26,15 @@ class PostController {
       if (!request.files?.length) {
         return ResponseHandler.error(response, 400, "Post image is required");
       }
-      const createdPost = await this.postService.createPost(
+      await this.postService.createPost(
         request.body,
-        (request as any).userData,
+        (request as any).userData._id,
         (request as any).files
       );
       return ResponseHandler.success(
         response,
         201,
-        "Post created successfully!",
-        createdPost
+        "Post created successfully!"
       );
     } catch (error: any) {
       return ResponseHandler.error(
@@ -61,7 +60,7 @@ class PostController {
       }
       const updatedPost = await this.postService.updatePost(
         request.body,
-        (request as any).userData,
+        (request as any).userData._id,
         request.params.id,
         (request as any).files
       );
@@ -85,7 +84,10 @@ class PostController {
     response: Response
   ): Promise<any> => {
     try {
-      const foundPost = await this.postService.getPost(request.params.id,(request as any).userData._id);
+      const foundPost = await this.postService.getPost(
+        request.params.id,
+        (request as any).userData._id
+      );
       return ResponseHandler.success(
         response,
         200,
@@ -100,16 +102,19 @@ class PostController {
       );
     }
   };
+
   public getAllPost = async (
     request: Request,
     response: Response
   ): Promise<any> => {
     try {
-      const foundPost = await this.postService.getAllPost((request as any).userData._id );
+      const foundPost = await this.postService.getAllPost(
+        (request as any).userData._id
+      );
       return ResponseHandler.success(
         response,
         200,
-        "Posts fetch successFully!",
+        `Posts ${foundPost.length} fetch successFully!`,
         foundPost
       );
     } catch (error: any) {
@@ -120,20 +125,20 @@ class PostController {
       );
     }
   };
+
   public deletePost = async (
     request: Request,
     response: Response
   ): Promise<any> => {
     try {
-      const foundPost = await this.postService.deletePost(
+      await this.postService.deletePost(
         request.params.id,
-        (request as any).userData
+        (request as any).userData._id
       );
       return ResponseHandler.success(
         response,
         200,
-        "Post deleted successFully!",
-        foundPost[0]
+        "Post deleted successFully!"
       );
     } catch (error: any) {
       return ResponseHandler.error(

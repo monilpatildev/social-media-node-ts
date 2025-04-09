@@ -60,7 +60,7 @@ const fileStorage = multer.diskStorage({
   },
 });
 
-const upload = multer({
+export const uploadPosts = multer({
   storage: fileStorage,
   fileFilter: (request, file, cb) => {
     if (!allowedMimeTypes.includes(file.mimetype)) {
@@ -92,24 +92,4 @@ export const deletePost = (userId: string, idOfPost: string): void => {
   fs.rm(postDir, { recursive: true });
 };
 
-export function uploadPostsMiddleware(
-  request: Request,
-  res: Response,
-  next: NextFunction
-): any {
-  upload.array("posts", 5)(request, res, (error: any) => {
-    if (error) {
-      console.log(error);
-      return ResponseHandler.error(
-        res,
-        400,
-        "Only images (JPG, PNG, WebP, or GIF), up to 5 images."
-      );
-    }
-    const files = request.files as Express.Multer.File[];
-    if (!files || files.length === 0) {
-      return ResponseHandler.error(res, 400, "At least one image is required.");
-    }
-    next();
-  });
-}
+

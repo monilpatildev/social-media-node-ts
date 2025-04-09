@@ -1,3 +1,6 @@
+import { Types } from "mongoose";
+import { Status } from "./enums";
+
 export interface IUploadedFile {
   fieldname: string;
   originalname: string;
@@ -7,4 +10,10 @@ export interface IUploadedFile {
   filename: string;
   path: string;
   size: number;
+}
+
+export interface IFollowQuery {
+  userId: Types.ObjectId;
+  followingId: Types.ObjectId;
+  status?: Status;
 }

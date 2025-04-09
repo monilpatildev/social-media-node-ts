@@ -1,7 +1,7 @@
 import { Router } from "express";
 import UserController from "./user.controller";
 import AuthMiddleware from "../../middleware/authVerification";
-import uploadProfileMiddleware from "../../utils/multerForProfile.util";
+import ImageUploadMiddleware from "../../middleware/ImageUploadMiddleware";
 
 const userRoute = Router();
 
@@ -9,7 +9,7 @@ userRoute.get("/", AuthMiddleware.authenticate, UserController.getAllUsers);
 userRoute.patch(
   "/profile",
   AuthMiddleware.authenticate,
-  uploadProfileMiddleware,
+  ImageUploadMiddleware.uploadProfile,
   UserController.updateUser
 );
 userRoute.get(
@@ -46,12 +46,10 @@ userRoute.get(
   UserController.getFollowRequests
 );
 
-
 userRoute.post(
   "/accept-request",
   AuthMiddleware.authenticate,
   UserController.acceptFollowRequest
 );
-
 
 export default userRoute;

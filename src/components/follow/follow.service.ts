@@ -155,12 +155,9 @@ class FollowService {
           message: "Request not found",
         };
       }
-
-      const createdFollow = await this.followDao.acceptFollowRequest(
-        existingFollow._id,
-        { status: "accepted" }
-      );
-      return createdFollow;
+      return await this.followDao.acceptFollowRequest(existingFollow._id, {
+        status: "accepted",
+      });
     } catch (error: any) {
       throw error;
     }

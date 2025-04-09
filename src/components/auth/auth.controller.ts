@@ -32,12 +32,11 @@ class AuthController {
         return ResponseHandler.error(response, 400, errorMessages);
       }
 
-      const newUser = await this.userService.createUser(request.body);
+      await this.userService.createUser(request.body);
       return ResponseHandler.success(
         response,
         201,
         "user created successfully!",
-        newUser
       );
     } catch (error: any) {
       return ResponseHandler.error(

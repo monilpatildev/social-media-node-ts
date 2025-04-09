@@ -48,7 +48,7 @@ export const fileStorage = multer.diskStorage({
   },
 });
 
-const upload = multer({
+export const uploadProfile = multer({
   storage: fileStorage,
   limits: { files: 1, fileSize: 3 * 1024 * 1024 },
   fileFilter: (request, file, cb) => {
@@ -59,24 +59,3 @@ const upload = multer({
   },
 });
 
-function uploadProfileMiddleware(
-  request: Request,
-  response: Response,
-  next: NextFunction
-): any {
-  try {
-    upload.single("profile")(request, response, function (error) {
-      if (error) {
-        return ResponseHandler.error(
-          response,
-          400,
-          "Only a single image (JPG, PNG, WebP, or GIF) and max 3 mb size is allowed."
-        );
-      } else next();
-    });
-  } catch (error) {
-    return ResponseHandler.error(response, 500, "Internal server error");
-  }
-}
-
-export default uploadProfileMiddleware;

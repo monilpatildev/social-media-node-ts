@@ -39,7 +39,7 @@ class UserController {
 
       const newUser = await this.userService.updateUser(
         request.body,
-        (request as any).userData,
+        (request as any).userData._id,
         request.file
       );
       return ResponseHandler.success(
@@ -62,7 +62,7 @@ class UserController {
     response: Response
   ): Promise<any> => {
     try {
-      const foundUser = await this.userService.deleteUser(request.params.id);
+      await this.userService.deleteUser(request.params.id);
       return ResponseHandler.success(
         response,
         200,
@@ -167,6 +167,7 @@ class UserController {
       );
     }
   };
+
   public unfollowUser = async (
     request: Request,
     response: Response
@@ -175,7 +176,7 @@ class UserController {
       if (request.params.id) {
         return ResponseHandler.error(response, 400, "User id required");
       }
-      const foundUser = await this.followService.unfollowUser(
+      await this.followService.unfollowUser(
         (request as any).userData._id,
         request.body.id
       );
@@ -220,11 +221,15 @@ class UserController {
       if (request.params.id) {
         return ResponseHandler.error(response, 400, "User id required");
       }
-      const foundUser = await this.followService.acceptRequest(
+      await this.followService.acceptRequest(
         (request as any).userData._id,
         request.body.id
       );
-      return ResponseHandler.success(response, 200, "Followed successFully!");
+      return ResponseHandler.success(
+        response,
+        200,
+        "Request accepted successFully!"
+      );
     } catch (error: any) {
       return ResponseHandler.error(
         response,

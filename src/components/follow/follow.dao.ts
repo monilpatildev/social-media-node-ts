@@ -1,43 +1,44 @@
+import { IFollowQuery } from "../../common/interfaces";
 import FollowModel, { IFollow } from "./follow.model";
 
 class FollowDao {
-  public createFollow = async (followData: IFollow) => {
+  public createFollow = async (
+    followData: IFollow
+  ): Promise<IFollow | null> => {
     try {
       return await FollowModel.create(followData);
     } catch (error: any) {
       throw error;
     }
   };
-  public findFollow = async (query: any): Promise<IFollow | null> => {
+  public findFollow = async (query: IFollowQuery): Promise<IFollow | null> => {
     try {
-      const follow = await FollowModel.findOne(query).exec();
-      return follow;
+      return await FollowModel.findOne(query);
     } catch (error) {
       throw error;
     }
   };
-  public deleteFollow = async (query: any): Promise<IFollow | null> => {
+  public deleteFollow = async (
+    query: IFollowQuery
+  ): Promise<IFollow | null> => {
     try {
-      const follow = await FollowModel.findOneAndDelete(query).exec();
-      return follow;
+      return await FollowModel.findOneAndDelete(query);
     } catch (error) {
       throw error;
     }
   };
   public acceptFollowRequest = async (query: any, data: any): Promise<any> => {
     try {
-      const follow = await FollowModel.findByIdAndUpdate(query, data, {
+      return await FollowModel.findByIdAndUpdate(query, data, {
         new: true,
       });
-      return follow;
     } catch (error) {
       throw error;
     }
   };
   public getFollowRequests = async (pipeline: any[]): Promise<any> => {
     try {
-      const follow = await FollowModel.aggregate(pipeline);
-      return follow;
+      return await FollowModel.aggregate(pipeline);
     } catch (error) {
       throw error;
     }

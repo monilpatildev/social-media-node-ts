@@ -6,6 +6,8 @@ import { updateFileName } from "../../utils/multerForPost.util";
 import path from "path";
 import { existsSync, mkdirSync, promises as fs } from "fs";
 import FollowDao from "../follow/follow.dao";
+import { Status } from "../../common/enums";
+import { IFollow } from "../follow/follow.model";
 
 class PostService {
   private postDao: PostDao;
@@ -21,7 +23,6 @@ class PostService {
     files: IUploadedFile[]
   ): Promise<any> => {
     try {
-      const { _id } = userId;
       if (files) {
         const imageName = files.map((file: any) => file.originalname);
         const checkDuplicateImage = imageName.filter(
@@ -35,14 +36,20 @@ class PostService {
       );
 
       const newPostData = {
-        postedBy: new Types.ObjectId(_id),
+        postedBy: new Types.ObjectId(userId),
         title: postData.title,
         description: postData.description || "",
         images: imageStore,
       } as IPost;
 
       const savedPost = await this.postDao.createPost(newPostData);
-      const newImagePath = await updateFileName(_id, savedPost._id.toString());
+      if (!savedPost) {
+        throw { status: 400, message: "Internal server error" };
+      }
+      const newImagePath = await updateFileName(
+        userId,
+        savedPost?._id.toString()
+      );
 
       const newImagePathArray = files.map(
         (file: IUploadedFile) => `${newImagePath}/${file.originalname}`
@@ -51,13 +58,7 @@ class PostService {
       const updatedPostData = {
         images: newImagePathArray,
       } as IPost;
-
-      const updatedImagePathPost = await this.postDao.updatePost(
-        savedPost._id,
-        updatedPostData
-      );
-
-      return updatedImagePathPost;
+      return await this.postDao.updatePost(savedPost._id, updatedPostData);
     } catch (error: any) {
       throw error;
     }
@@ -65,17 +66,16 @@ class PostService {
 
   public updatePost = async (
     postData: any,
-    userId: any,
+    userId: string,
     postId: string,
     files?: IUploadedFile[]
   ): Promise<any> => {
     try {
-      const { _id } = userId;
       if (!isObjectIdOrHexString(postId)) {
         throw { status: 400, message: "Invalid post id" };
       }
       const pipeline: any[] = [
-        { $match: { _id: new Types.ObjectId(postId), isDeleted: false } },
+        { $match: { userId: new Types.ObjectId(postId), isDeleted: false } },
       ];
       const postDetails: IPost[] = await this.postDao.getPostById(pipeline);
       if (!postDetails.length) {
@@ -102,7 +102,7 @@ class PostService {
       if (files) {
         const dirPath = path.resolve(
           __dirname,
-          `../../uploads/users-post/${_id}/${postId}`
+          `../../uploads/users-post/${userId}/${postId}`
         );
         const newImagePathArray = await Promise.all(
           files.map(async (file: IUploadedFile) => {
@@ -112,8 +112,7 @@ class PostService {
         );
         newPostData.images = newImagePathArray;
       }
-      const updatedPost = await this.postDao.updatePost(postId, newPostData);
-      return updatedPost;
+      return await this.postDao.updatePost(postId, newPostData);
     } catch (error: any) {
       throw error;
     }
@@ -164,7 +163,7 @@ class PostService {
         const follow = await this.followDao.findFollow({
           userId: new Types.ObjectId(userId),
           followingId: new Types.ObjectId(postedById),
-          status: "accepted",
+          status: Status.ACCEPTED,
         });
 
         if (!follow) {
@@ -219,25 +218,23 @@ class PostService {
           if (userId === postedById) {
             return post;
           }
-          const follow = await this.followDao.findFollow({
+          const follow: IFollow | null = await this.followDao.findFollow({
             userId: new Types.ObjectId(userId),
             followingId: new Types.ObjectId(postedById),
-            status: "accepted",
+            status: Status.ACCEPTED,
           });
           return follow ? post : null;
         })
       );
-      const finalPosts = filteredPosts.filter((post) => post !== null);
 
-      return finalPosts;
+      return filteredPosts.filter((post) => post !== null);
     } catch (error: any) {
       throw error;
     }
   };
 
-  public deletePost = async (postId: string, userId: any): Promise<any> => {
+  public deletePost = async (postId: string, userId: string): Promise<any> => {
     try {
-      const { _id } = userId;
       if (!isObjectIdOrHexString(postId)) {
         throw { status: 400, message: "Invalid post id" };
       }
@@ -250,13 +247,10 @@ class PostService {
       }
       const dirPath = path.resolve(
         __dirname,
-        `../../uploads/users-post/${_id}/${postId}`
+        `../../uploads/users-post/${userId}/${postId}`
       );
-      console.log("Creating directory:", dirPath);
       await fs.rm(dirPath, { recursive: true, force: true });
-
-      const deletedPost = await this.postDao.deletePost(postId);
-      return deletedPost;
+      return await this.postDao.deletePost(postId);
     } catch (error: any) {
       throw error;
     }

@@ -1,7 +1,7 @@
 import PostModel, { IPost } from "./post.model";
 
 class PostDao {
-  public getPostById = async (pipeline: any[]): Promise<any> => {
+  public getPostById = async (pipeline: any[]): Promise<IPost[]> => {
     try {
       return await PostModel.aggregate(pipeline);
     } catch (error: any) {
@@ -16,7 +16,10 @@ class PostDao {
     }
   };
 
-  public updatePost = async (id: string, postData: IPost): Promise<any> => {
+  public updatePost = async (
+    id: string,
+    postData: IPost
+  ): Promise<IPost | null> => {
     try {
       return await PostModel.findByIdAndUpdate(id, postData, { new: true });
     } catch (error: any) {

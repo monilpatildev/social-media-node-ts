@@ -40,20 +40,7 @@ class UserService {
       if (!createUser) {
         throw { status: 500, message: "Internal server error" };
       }
-      const findUserPipeline: any[] = [
-        { $match: { _id: createUser._id } },
-        {
-          $project: {
-            __v: 0,
-            isDeleted: 0,
-            password: 0,
-            createdAt: 0,
-            updatedAt: 0,
-          },
-        },
-      ];
-      const foundUser = await this.userDao.getUserByIdOrEmail(findUserPipeline);
-      return foundUser[0];
+      return createUser;
     } catch (error: any) {
       throw error;
     }
@@ -61,17 +48,15 @@ class UserService {
 
   public updateUser = async (
     userData: any,
-    userId: any,
+    userId: string,
     file?: IUploadedFile
   ): Promise<any> => {
     try {
-      const { _id } = userId;
-
       if (file) {
         const userDir = path.resolve(
           __dirname,
           "../../uploads/users-profile-picture",
-          _id
+          userId
         );
         const filePath = path.join(userDir, file.originalname);
 
@@ -81,7 +66,7 @@ class UserService {
         userData.profile = filePath;
       }
 
-      const updatedUser = await this.userDao.updateUserById(_id, userData);
+      const updatedUser = await this.userDao.updateUserById(userId, userData);
       if (!updatedUser) {
         throw { status: 500, message: "Internal server error" };
       }
@@ -164,6 +149,7 @@ class UserService {
 
       const queryArray = [query.name, query.username];
       const fieldsArray = ["firstName", "username"];
+
       pipeline.push(addToPipeline(queryArray, fieldsArray));
 
       pipeline.push({

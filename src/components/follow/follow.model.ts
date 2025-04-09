@@ -1,9 +1,10 @@
 import mongoose, { Document, Model, Types } from "mongoose";
+import { Status } from "../../common/enums";
 
 export interface IFollow extends Document {
   userId: Types.ObjectId;
   followingId: Types.ObjectId;
-  status: "pending" | "accepted";
+  status: Status;
 }
 
 const followSchema = new mongoose.Schema<IFollow>(
@@ -20,8 +21,8 @@ const followSchema = new mongoose.Schema<IFollow>(
     },
     status: {
       type: String,
-      enum: ["pending", "accepted"],
-      default: "pending",
+      enum: Object.values(Status),
+      default: Status.PENDING,
     },
   },
   { timestamps: true }
