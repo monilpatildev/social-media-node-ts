@@ -11,7 +11,7 @@ interface MulterRequest extends Request {
 type DestinationCallback = (error: Error | null, destination: string) => void;
 type FileNameCallback = (error: Error | null, filename: string) => void;
 
-const UPLOAD_DIR = path.join(__dirname, "../uploads/users-post");
+const UPLOAD_DIR: string = path.join(__dirname, "../uploads/users-post");
 
 if (!existsSync(UPLOAD_DIR)) {
   mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -21,12 +21,12 @@ const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 const fileStorage = multer.diskStorage({
   destination: async (
-    request: MulterRequest, 
+    request: MulterRequest,
     file: Express.Multer.File,
-    callback: (error: Error | null, destination: string) => void
+    callback: DestinationCallback
   ): Promise<void> => {
     try {
-      const user = (request as any).userData; 
+      const user = (request as any).userData;
 
       if (request.params.id) {
         const postDir = pathResolve(
@@ -54,7 +54,7 @@ const fileStorage = multer.diskStorage({
   filename: (
     request: Request,
     file: Express.Multer.File,
-    callback: (error: Error | null, filename: string) => void
+    callback: FileNameCallback
   ): void => {
     callback(null, file.originalname);
   },
@@ -62,6 +62,7 @@ const fileStorage = multer.diskStorage({
 
 export const uploadPosts = multer({
   storage: fileStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (request, file, cb) => {
     if (!allowedMimeTypes.includes(file.mimetype)) {
       return cb(new Error("Invalid file type"));
@@ -69,7 +70,6 @@ export const uploadPosts = multer({
     cb(null, true);
   },
 });
-
 
 export const updateFileName = (userId: string, postId: string): string => {
   const postDir = pathResolve(
@@ -84,12 +84,10 @@ export const updateFileName = (userId: string, postId: string): string => {
   return newPath;
 };
 
-export const deletePost = (userId: string, idOfPost: string): void => {
-  const postDir = pathResolve(
-    __dirname,
-    `../uploads/users-post/${userId}/${idOfPost}`
-  );
-  fs.rm(postDir, { recursive: true });
-};
-
-
+// export const deletePost = (userId: string, idOfPost: string): void => {
+//   const postDir = pathResolve(
+//     __dirname,
+//     `../uploads/users-post/${userId}/${idOfPost}`
+//   );
+//   fs.rm(postDir, { recursive: true });
+// };

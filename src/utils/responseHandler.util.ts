@@ -1,4 +1,6 @@
 import { Response } from "express";
+import { IApiResponse } from "../common/interfaces";
+
 
 export class ResponseHandler {
   static success(
@@ -6,7 +8,7 @@ export class ResponseHandler {
     status: number,
     message: string,
     data?: any
-  ): Response {
+  ): Response<IApiResponse<any>> {
     return response.status(status).json({
       status,
       success: true,
@@ -14,11 +16,12 @@ export class ResponseHandler {
       data,
     });
   }
+
   static error(
     response: Response,
     status: number = 500,
     message: string = "Internal server error."
-  ): Response {
+  ): Response<IApiResponse<any>> {
     return response.status(status).json({
       status,
       success: false,
@@ -26,4 +29,3 @@ export class ResponseHandler {
     });
   }
 }
-

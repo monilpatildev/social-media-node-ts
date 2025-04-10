@@ -1,4 +1,4 @@
-import { IUploadedFile } from "./../../common/interfaces";
+import { IFilterQuery, IUploadedFile } from "./../../common/interfaces";
 import UserDao from "./user.dao";
 import { IUser } from "./user.model";
 import passwordManager from "../../utils/password.util";
@@ -14,7 +14,7 @@ class UserService {
     this.userDao = new UserDao();
   }
 
-  public createUser = async (userData: IUser): Promise<any> => {
+  public createUser = async (userData: IUser): Promise<IUser> => {
     try {
       const pipeline: any[] = [
         {
@@ -23,20 +23,24 @@ class UserService {
           },
         },
       ];
-      const existUser = await this.userDao.getUserByIdOrEmail(pipeline);
+      const existUser: IUser[] = await this.userDao.getUserByIdOrEmail(
+        pipeline
+      );
       if (existUser.length) {
         throw { status: 400, message: "Email or username already used" };
       }
       const { firstName, lastName, email, password, username } = userData;
-      const hashedPassword = await passwordManager.hashPassword(password);
-      const user: any = {
+      const hashedPassword: string = await passwordManager.hashPassword(
+        password
+      );
+      const user = {
         firstName,
         lastName,
         email,
         username,
         password: hashedPassword,
-      };
-      const createUser = await this.userDao.createUser(user);
+      } as IUser;
+      const createUser: IUser = await this.userDao.createUser(user);
       if (!createUser) {
         throw { status: 500, message: "Internal server error" };
       }
@@ -47,13 +51,13 @@ class UserService {
   };
 
   public updateUser = async (
-    userData: any,
+    userData: IUser,
     userId: string,
     file?: IUploadedFile
-  ): Promise<any> => {
+  ): Promise<IUser> => {
     try {
       if (file) {
-        const userDir = path.resolve(
+        const userDir: string = path.resolve(
           __dirname,
           "../../uploads/users-profile-picture",
           userId
@@ -66,7 +70,10 @@ class UserService {
         userData.profile = filePath;
       }
 
-      const updatedUser = await this.userDao.updateUserById(userId, userData);
+      const updatedUser: IUser | null = await this.userDao.updateUserById(
+        userId,
+        userData
+      );
       if (!updatedUser) {
         throw { status: 500, message: "Internal server error" };
       }
@@ -79,7 +86,7 @@ class UserService {
     }
   };
 
-  public getUser = async (id: string): Promise<any> => {
+  public getUser = async (id: string): Promise<IUser[]> => {
     try {
       if (!isObjectIdOrHexString(id)) {
         throw { status: 400, message: "Invalid user id" };
@@ -143,7 +150,7 @@ class UserService {
     }
   };
 
-  public getAllUser = async (query: any): Promise<any> => {
+  public getAllUser = async (query: IFilterQuery): Promise<IUser[]> => {
     try {
       const pipeline: any[] = [];
 
@@ -161,13 +168,19 @@ class UserService {
           createdAt: 0,
         },
       });
-
-      const pageNumber = parseInt(query.pageNumber, 10) || 1;
-      const limit = parseInt(query.limit, 10) || 10;
+      if (query.limit === "0") {
+        throw { status: 400, message: "Limit cannot be 0" };
+      }
+      if (query.pageNumber === "0") {
+        throw { status: 400, message: "Page number cannot be 0" };
+      }
+      const pageNumber = parseInt(query.pageNumber || "1", 10);
+      const limit = parseInt(query.limit || "10", 10);
       const skip = (pageNumber - 1) * limit;
-
+      // const sort = isObjectIdOrHexString
       pipeline.push({ $skip: skip });
       pipeline.push({ $limit: limit });
+      // pipeline.push({ $sort: { createdAt: sort } });
 
       const userDetails: IUser[] = await this.userDao.getUserByIdOrEmail(
         pipeline
@@ -182,13 +195,9 @@ class UserService {
     }
   };
 
-  public deleteUser = async (id: string): Promise<any> => {
+  public deleteUser = async (id: string): Promise<IUser> => {
     try {
-      if (!isObjectIdOrHexString(id)) {
-        throw { status: 400, message: "Invalid user id" };
-      }
       const deleteUser = await this.userDao.deleteUserById(id);
-
       if (!deleteUser) {
         throw { status: 404, message: "User not found!" };
       }

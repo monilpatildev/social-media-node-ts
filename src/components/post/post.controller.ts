@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { ResponseHandler } from "../../utils/responseHandler.util";
 import { validatePost } from "./post.validation";
 import PostService from "./post.service";
+import { ValidationResult } from "joi";
+import { IPost } from "./post.model";
 
 class PostController {
   private postService: PostService;
@@ -15,7 +17,7 @@ class PostController {
     response: Response
   ): Promise<any> => {
     try {
-      const postValidate = validatePost(request.body);
+      const postValidate: ValidationResult = validatePost(request.body);
       if (postValidate.error) {
         const errorMessages = postValidate.error.details
           .map((detail) => detail.message)
@@ -50,7 +52,7 @@ class PostController {
     response: Response
   ): Promise<any> => {
     try {
-      const postValidate = validatePost(request.body, true);
+      const postValidate: ValidationResult = validatePost(request.body, true);
       if (postValidate.error) {
         const errorMessages = postValidate.error.details
           .map((detail) => detail.message)
@@ -58,7 +60,10 @@ class PostController {
         console.log(errorMessages);
         return ResponseHandler.error(response, 400, errorMessages);
       }
-      const updatedPost = await this.postService.updatePost(
+      if (!request.params.id) {
+        return ResponseHandler.error(response, 400, "Post id required");
+      }
+      const updatedPost: IPost = await this.postService.updatePost(
         request.body,
         (request as any).userData._id,
         request.params.id,
@@ -84,7 +89,10 @@ class PostController {
     response: Response
   ): Promise<any> => {
     try {
-      const foundPost = await this.postService.getPost(
+      if (!request.params.id) {
+        return ResponseHandler.error(response, 400, "Post id required");
+      }
+      const foundPost: IPost[] = await this.postService.getPost(
         request.params.id,
         (request as any).userData._id
       );
@@ -108,8 +116,8 @@ class PostController {
     response: Response
   ): Promise<any> => {
     try {
-      const foundPost = await this.postService.getAllPost(
-        (request as any).userData._id
+      const foundPost: IPost[]= await this.postService.getAllPost(
+        (request as any).userData._id,request.query
       );
       return ResponseHandler.success(
         response,
@@ -131,6 +139,9 @@ class PostController {
     response: Response
   ): Promise<any> => {
     try {
+      if (!request.params.id) {
+        return ResponseHandler.error(response, 400, "Post id required");
+      }
       await this.postService.deletePost(
         request.params.id,
         (request as any).userData._id

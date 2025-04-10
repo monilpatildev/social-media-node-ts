@@ -1,10 +1,9 @@
 import { Router } from "express";
 import PostController from "./post.controller";
 import AuthMiddleware from "../../middleware/authVerification";
-import { uploadPostsMiddleware } from "../../utils/multerForPost.util";
 import ImageUploadMiddleware from "../../middleware/ImageUploadMiddleware";
 
-const postRoute = Router();
+const postRoute: Router = Router();
 
 postRoute.post(
   "/",
@@ -15,7 +14,7 @@ postRoute.post(
 postRoute.patch(
   "/:id",
   AuthMiddleware.authenticate,
-  uploadPostsMiddleware,
+  ImageUploadMiddleware.uploadPosts,
   PostController.updatePost
 );
 postRoute.get("/", AuthMiddleware.authenticate, PostController.getAllPost);

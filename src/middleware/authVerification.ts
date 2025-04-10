@@ -3,7 +3,7 @@ import { config } from "dotenv";
 import { ResponseHandler } from "../utils/responseHandler.util";
 import UserDao from "../components/user/user.dao";
 import { NextFunction, Request, Response } from "express";
-import { Types } from "mongoose";
+import { isObjectIdOrHexString, Types } from "mongoose";
 config();
 
 class AuthMiddleware {
@@ -26,6 +26,9 @@ class AuthMiddleware {
             accessToken,
             accessSecretKey
           );
+          if (!isObjectIdOrHexString(verifyRefreshToken._id)) {
+            return ResponseHandler.error(response, 401, "Invalid token");
+          }
           const pipeline: any = [
             {
               $match: {

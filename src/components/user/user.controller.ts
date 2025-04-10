@@ -4,6 +4,7 @@ import UserService from "../user/user.service";
 import { ValidationResult } from "joi";
 import { validateUser } from "./user.validation";
 import FollowService from "../follow/follow.service";
+import { Status } from "../../common/enums";
 
 class UserController {
   private userService: UserService;
@@ -24,7 +25,7 @@ class UserController {
       ) {
         return ResponseHandler.error(response, 400, "No body found!");
       }
-      const validationResult: ValidationResult<any> = await validateUser(
+      const validationResult: ValidationResult = await validateUser(
         request.body,
         true
       );
@@ -62,7 +63,7 @@ class UserController {
     response: Response
   ): Promise<any> => {
     try {
-      await this.userService.deleteUser(request.params.id);
+      await this.userService.deleteUser((request as any).userData._id);
       return ResponseHandler.success(
         response,
         200,
@@ -82,6 +83,9 @@ class UserController {
     response: Response
   ): Promise<any> => {
     try {
+      if (!request.params.id) {
+        return ResponseHandler.error(response, 400, "User id required");
+      }
       const foundUser = await this.userService.getUser(request.params.id);
       return ResponseHandler.success(
         response,
@@ -147,15 +151,15 @@ class UserController {
     response: Response
   ): Promise<any> => {
     try {
-      if (request.params.id) {
+      if (!request.body.id) {
         return ResponseHandler.error(response, 400, "User id required");
       }
-      const foundUserStatus = await this.followService.followUser(
+      const foundUserStatus: string = await this.followService.followUser(
         (request as any).userData._id,
         request.body.id
       );
       const resMessage =
-        foundUserStatus === "pending"
+        foundUserStatus === Status.PENDING
           ? "Sent follow request successFully!"
           : "Followed successFully!";
       return ResponseHandler.success(response, 200, resMessage);
@@ -173,7 +177,7 @@ class UserController {
     response: Response
   ): Promise<any> => {
     try {
-      if (request.params.id) {
+      if (!request.body.id) {
         return ResponseHandler.error(response, 400, "User id required");
       }
       await this.followService.unfollowUser(
@@ -218,7 +222,7 @@ class UserController {
     response: Response
   ): Promise<any> => {
     try {
-      if (request.params.id) {
+      if (!request.body.id) {
         return ResponseHandler.error(response, 400, "User id required");
       }
       await this.followService.acceptRequest(

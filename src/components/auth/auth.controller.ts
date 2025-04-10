@@ -21,7 +21,7 @@ class AuthController {
     response: Response
   ): Promise<any> => {
     try {
-      const validationResult: ValidationResult<any> = await validateUser(
+      const validationResult: ValidationResult = await validateUser(
         request.body
       );
       if (validationResult.error) {
@@ -52,7 +52,7 @@ class AuthController {
     response: Response
   ): Promise<any> => {
     try {
-      const validationResult: ValidationResult<any> =
+      const validationResult: ValidationResult =
         await validateEmailPassword(request.body);
       if (validationResult.error) {
         const errorMessages = validationResult.error.details

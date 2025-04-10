@@ -2,8 +2,9 @@ import { Router } from "express";
 import UserController from "./user.controller";
 import AuthMiddleware from "../../middleware/authVerification";
 import ImageUploadMiddleware from "../../middleware/ImageUploadMiddleware";
+import { uploadProfile } from "../../utils/multerForProfile.util";
 
-const userRoute = Router();
+const userRoute: Router = Router();
 
 userRoute.get("/", AuthMiddleware.authenticate, UserController.getAllUsers);
 userRoute.patch(

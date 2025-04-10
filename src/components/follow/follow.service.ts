@@ -2,6 +2,8 @@ import { isObjectIdOrHexString, Types } from "mongoose";
 import FollowDao from "./follow.dao";
 import UserDao from "../user/user.dao";
 import FollowModel, { IFollow } from "./follow.model";
+import { IUser } from "../user/user.model";
+import { Status } from "../../common/enums";
 
 class FollowService {
   private followDao: FollowDao;
@@ -15,7 +17,7 @@ class FollowService {
   public followUser = async (
     userId: string,
     followingId: string
-  ): Promise<any> => {
+  ): Promise<string> => {
     try {
       if (!isObjectIdOrHexString(followingId)) {
         throw { status: 400, message: "Invalid user id" };
@@ -37,30 +39,34 @@ class FollowService {
         },
       ];
 
-      const foundUserResult = await this.userDao.getUserByIdOrEmail(pipeline);
+      const foundUserResult: IUser[] = await this.userDao.getUserByIdOrEmail(
+        pipeline
+      );
 
       if (!foundUserResult || !foundUserResult.length) {
         throw { status: 404, message: "User not found" };
       }
 
-      const existingFollow = await this.followDao.findFollow({
+      const existingFollow: IFollow | null = await this.followDao.findFollow({
         userId: new Types.ObjectId(userId),
         followingId: new Types.ObjectId(followingId),
       });
 
-      if (existingFollow?.status === "accepted") {
+      if (existingFollow?.status === Status.ACCEPTED) {
         throw {
           status: 400,
           message: "You are already following this user",
         };
-      } else if (existingFollow && existingFollow?.status === "pending") {
+      } else if (existingFollow && existingFollow?.status === Status.PENDING) {
         throw {
           status: 400,
           message: "You have already requested this user",
         };
       }
 
-      const status = foundUserResult[0].isPrivate ? "pending" : "accepted";
+      const status = foundUserResult[0].isPrivate
+        ? Status.PENDING
+        : Status.ACCEPTED;
 
       const followData = {
         userId: new Types.ObjectId(userId),
@@ -68,7 +74,9 @@ class FollowService {
         status,
       } as IFollow;
 
-      const createdFollow = await this.followDao.createFollow(followData);
+      const createdFollow: IFollow = await this.followDao.createFollow(
+        followData
+      );
       if (!createdFollow) {
         throw {
           status: 400,
@@ -84,12 +92,12 @@ class FollowService {
   public unfollowUser = async (
     userId: string,
     followingId: string
-  ): Promise<any> => {
+  ): Promise<IFollow | null> => {
     try {
       if (!isObjectIdOrHexString(followingId)) {
         throw { status: 400, message: "Invalid user id" };
       }
-      const followRecord = await this.followDao.findFollow({
+      const followRecord: IFollow | null = await this.followDao.findFollow({
         userId: new Types.ObjectId(userId),
         followingId: new Types.ObjectId(followingId),
       });
@@ -98,7 +106,7 @@ class FollowService {
         throw { status: 404, message: "User not found" };
       }
 
-      const removedRecord = await this.followDao.deleteFollow({
+      const removedRecord: IFollow | null = await this.followDao.deleteFollow({
         userId: new Types.ObjectId(userId),
         followingId: new Types.ObjectId(followingId),
       });
@@ -127,8 +135,10 @@ class FollowService {
         },
       ];
 
-      const foundUserResult = await this.userDao.getUserByIdOrEmail(pipeline);
-      if (foundUserResult[0].isPrivate === "false") {
+      const foundUserResult: IUser[] = await this.userDao.getUserByIdOrEmail(
+        pipeline
+      );
+      if (foundUserResult[0].isPrivate === false) {
         throw {
           status: 400,
           message: "You account is public , request already accepted",
@@ -139,31 +149,32 @@ class FollowService {
         throw { status: 400, message: "Invalid user id" };
       }
 
-      const existingFollow = await this.followDao.findFollow({
-        userId: new Types.ObjectId(followingId),
-        followingId: new Types.ObjectId(userId),
-      });
+      const existingFollowRequest: IFollow | null =
+        await this.followDao.findFollow({
+          userId: new Types.ObjectId(followingId),
+          followingId: new Types.ObjectId(userId),
+        });
 
-      if (existingFollow?.status === "accepted") {
+      if (existingFollowRequest?.status === Status.ACCEPTED) {
         throw {
           status: 400,
           message: "Request already accepted",
         };
-      } else if (!existingFollow) {
+      } else if (!existingFollowRequest) {
         throw {
           status: 400,
           message: "Request not found",
         };
       }
-      return await this.followDao.acceptFollowRequest(existingFollow._id, {
-        status: "accepted",
-      });
+      return (await this.followDao.acceptFollowRequest(
+        existingFollowRequest._id?.toString()
+      )) as IFollow;
     } catch (error: any) {
       throw error;
     }
   };
 
-  public getRequest = async (userId: string): Promise<IFollow> => {
+  public getRequest = async (userId: string): Promise<IFollow[]> => {
     try {
       const pipeline = [
         {
@@ -178,8 +189,10 @@ class FollowService {
         },
       ];
 
-      const foundUserResult = await this.userDao.getUserByIdOrEmail(pipeline);
-      if (foundUserResult[0].isPrivate === "false") {
+      const foundUserResult: IUser[] = await this.userDao.getUserByIdOrEmail(
+        pipeline
+      );
+      if (foundUserResult[0].isPrivate === false) {
         throw {
           status: 400,
           message: "You account is public , no such request found",
@@ -190,7 +203,7 @@ class FollowService {
         {
           $match: {
             followingId: new Types.ObjectId(userId),
-            status: "pending",
+            status: Status.PENDING,
           },
         },
       ];
@@ -200,7 +213,7 @@ class FollowService {
       if (!allRequests) {
         throw { status: 404, message: "No requests found" };
       }
-      return allRequests;
+      return allRequests as IFollow[];
     } catch (error: any) {
       throw error;
     }

@@ -1,6 +1,6 @@
-import { Router } from "express";
+import { Router, RouterOptions } from "express";
 import authController from "./auth.controller";
-const authRoutes = Router();
+const authRoutes: Router = Router();
 
 authRoutes.post("/signup", authController.registerUser);
 authRoutes.post("/signin", authController.authenticateUser);

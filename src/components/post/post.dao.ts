@@ -8,7 +8,7 @@ class PostDao {
       throw error;
     }
   };
-  public createPost = async (postData: IPost): Promise<any> => {
+  public createPost = async (postData: IPost): Promise<IPost> => {
     try {
       return await PostModel.create(postData);
     } catch (error: any) {
@@ -27,13 +27,9 @@ class PostDao {
     }
   };
 
-  public deletePost = async (id: string): Promise<any> => {
+  public deletePost = async (id: string): Promise<IPost | null> => {
     try {
-      return await PostModel.findByIdAndUpdate(
-        id,
-        { isDeleted: true },
-        { new: true }
-      );
+      return await PostModel.findByIdAndDelete(id);
     } catch (error: any) {
       throw error;
     }

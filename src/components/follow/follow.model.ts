@@ -1,32 +1,31 @@
-import mongoose, { Document, Model, Types } from "mongoose";
+import mongoose, { Document, Model, Schema, Types } from "mongoose";
 import { Status } from "../../common/enums";
 
 export interface IFollow extends Document {
   userId: Types.ObjectId;
   followingId: Types.ObjectId;
   status: Status;
+  __v: number;
+  _id: Types.ObjectId;
 }
 
-const followSchema = new mongoose.Schema<IFollow>(
-  {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    followingId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    status: {
-      type: String,
-      enum: Object.values(Status),
-      default: Status.PENDING,
-    },
+const followSchema = new mongoose.Schema<IFollow>({
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
   },
-  { timestamps: true }
-);
+  followingId: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  status: {
+    type: String,
+    enum: Object.values(Status),
+    default: Status.PENDING,
+  },
+});
 
 const FollowModel: Model<IFollow> = mongoose.model<IFollow>(
   "Follow",

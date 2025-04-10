@@ -1,7 +1,7 @@
 import Joi from "joi";
-import { IUploadedFile } from "../../common/interfaces";
+import { IPost } from "./post.model";
 
-export const validatePost = (data: any, isPatch: boolean = false) => {
+export const validatePost = (data: IPost, isPatch: boolean = false) => {
   const postSchema = Joi.object({
     title: Joi.string()
       .empty("")

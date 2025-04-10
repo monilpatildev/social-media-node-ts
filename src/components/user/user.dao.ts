@@ -1,7 +1,7 @@
 import UserModel, { IUser } from "./user.model";
 
 class UserDao {
-  public createUser = async (user: IUser): Promise<any> => {
+  public createUser = async (user: IUser): Promise<IUser> => {
     try {
       return await UserModel.create(user);
     } catch (error: any) {
@@ -9,7 +9,7 @@ class UserDao {
     }
   };
 
-  public getUserByIdOrEmail = async (pipeline: any[]): Promise<any> => {
+  public getUserByIdOrEmail = async (pipeline: any[]): Promise<IUser[]> => {
     try {
       return await UserModel.aggregate(pipeline);
     } catch (error: any) {
@@ -17,7 +17,7 @@ class UserDao {
     }
   };
 
-  public deleteUserById = async (id: string): Promise<any> => {
+  public deleteUserById = async (id: string): Promise<IUser | null> => {
     try {
       return await UserModel.findByIdAndUpdate(
         id,
@@ -31,7 +31,10 @@ class UserDao {
     }
   };
 
-  public updateUserById = async (id: string, data: any): Promise<any> => {
+  public updateUserById = async (
+    id: string,
+    data: IUser
+  ): Promise<IUser | null> => {
     try {
       return await UserModel.findByIdAndUpdate(id, data, {
         new: true,

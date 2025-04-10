@@ -58,4 +58,3 @@ export const uploadProfile = multer({
     cb(null, true);
   },
 });
-

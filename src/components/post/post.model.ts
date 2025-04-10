@@ -6,6 +6,7 @@ export interface IPost extends Document {
   images: string[];
   postedBy: Types.ObjectId;
   isDeleted: boolean;
+  _id: Types.ObjectId;
 }
 
 const postSchema = new mongoose.Schema<IPost>(

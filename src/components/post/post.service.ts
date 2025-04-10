@@ -1,5 +1,5 @@
 import { isObjectIdOrHexString, Types } from "mongoose";
-import { IUploadedFile } from "../../common/interfaces";
+import { IFilterPostQuery, IUploadedFile } from "../../common/interfaces";
 import PostDao from "./post.dao";
 import { IPost } from "./post.model";
 import { updateFileName } from "../../utils/multerForPost.util";
@@ -8,6 +8,7 @@ import { existsSync, mkdirSync, promises as fs } from "fs";
 import FollowDao from "../follow/follow.dao";
 import { Status } from "../../common/enums";
 import { IFollow } from "../follow/follow.model";
+import addToPipeline from "../../service/pipeline.service";
 
 class PostService {
   private postDao: PostDao;
@@ -18,22 +19,22 @@ class PostService {
   }
 
   public createPost = async (
-    postData: any,
-    userId: any,
+    postData: IPost,
+    userId: string,
     files: IUploadedFile[]
-  ): Promise<any> => {
+  ): Promise<IPost> => {
     try {
+      let imageStore: string[] = [];
       if (files) {
-        const imageName = files.map((file: any) => file.originalname);
-        const checkDuplicateImage = imageName.filter(
-          (name: string, index: number) => imageName.indexOf(name) !== index
-        );
-        if (checkDuplicateImage.length)
-          throw { status: 404, message: "You can not upload same image name" };
+        imageStore = files.map((file: IUploadedFile) => file.originalname);
+        const uniqueNames = new Set(imageStore);
+        if (uniqueNames.size !== imageStore.length) {
+          throw {
+            status: 400,
+            message: "You cannot upload duplicate image names",
+          };
+        }
       }
-      const imageStore: string[] = files.map(
-        (file: IUploadedFile) => file.originalname
-      );
 
       const newPostData = {
         postedBy: new Types.ObjectId(userId),
@@ -42,11 +43,14 @@ class PostService {
         images: imageStore,
       } as IPost;
 
-      const savedPost = await this.postDao.createPost(newPostData);
+      const savedPost: IPost | null = await this.postDao.createPost(
+        newPostData
+      );
+
       if (!savedPost) {
         throw { status: 400, message: "Internal server error" };
       }
-      const newImagePath = await updateFileName(
+      const newImagePath: string = await updateFileName(
         userId,
         savedPost?._id.toString()
       );
@@ -58,67 +62,70 @@ class PostService {
       const updatedPostData = {
         images: newImagePathArray,
       } as IPost;
-      return await this.postDao.updatePost(savedPost._id, updatedPostData);
+
+      return (await this.postDao.updatePost(
+        savedPost._id.toString(),
+        updatedPostData
+      )) as IPost;
     } catch (error: any) {
       throw error;
     }
   };
 
   public updatePost = async (
-    postData: any,
+    postData: Partial<IPost>,
     userId: string,
     postId: string,
     files?: IUploadedFile[]
-  ): Promise<any> => {
+  ): Promise<IPost> => {
     try {
       if (!isObjectIdOrHexString(postId)) {
         throw { status: 400, message: "Invalid post id" };
       }
-      const pipeline: any[] = [
+
+      const pipeline = [
         { $match: { userId: new Types.ObjectId(postId), isDeleted: false } },
       ];
+
       const postDetails: IPost[] = await this.postDao.getPostById(pipeline);
       if (!postDetails.length) {
         throw { status: 404, message: "Post not found!" };
       }
 
-      if (files) {
-        const imageNames = files.map(
-          (file: IUploadedFile) => file.originalname
-        );
-        const duplicateNames = imageNames.filter(
-          (name, index) => imageNames.indexOf(name) !== index
-        );
-        if (duplicateNames.length) {
-          throw {
-            status: 404,
-            message: "You cannot upload duplicate image names",
-          };
-        }
-      }
       const newPostData = {} as IPost;
       if (postData.title) newPostData.title = postData.title;
       if (postData.description) newPostData.description = postData.description;
-      if (files) {
+
+      if (files && files.length) {
+        const seen = new Set<string>();
         const dirPath = path.resolve(
           __dirname,
           `../../uploads/users-post/${userId}/${postId}`
         );
+
         const newImagePathArray = await Promise.all(
           files.map(async (file: IUploadedFile) => {
-            const dest = path.join(dirPath, file.originalname);
-            return dest;
+            const fileName = file.originalname;
+            if (seen.has(fileName)) {
+              throw {
+                status: 400,
+                message: "You cannot upload duplicate image names",
+              };
+            }
+            seen.add(fileName);
+            return path.join(dirPath, fileName);
           })
         );
         newPostData.images = newImagePathArray;
       }
-      return await this.postDao.updatePost(postId, newPostData);
+
+      return (await this.postDao.updatePost(postId, newPostData)) as IPost;
     } catch (error: any) {
       throw error;
     }
   };
 
-  public getPost = async (id: string, userId: string) => {
+  public getPost = async (id: string, userId: string): Promise<IPost[]> => {
     try {
       if (!isObjectIdOrHexString(id)) {
         throw { status: 400, message: "Invalid post id" };
@@ -177,10 +184,45 @@ class PostService {
     }
   };
 
-  public getAllPost = async (userId: string) => {
+  public getAllPost = async (
+    userId: string,
+    query: IFilterPostQuery
+  ): Promise<IPost[]> => {
     try {
-      const pipeline: any[] = [
-        { $match: { isDeleted: false } },
+      const followPipeline = [
+        {
+          $match: {
+            userId: new Types.ObjectId(userId),
+            status: "accepted",
+          },
+        },
+        {
+          $project: {
+            followingId: 1,
+          },
+        },
+      ];
+
+      const followRecords: IFollow[] = await this.followDao.getFollowRequests(
+        followPipeline
+      );
+      
+      const followingIds = followRecords.map((record) => record.followingId);
+      followingIds.push(new Types.ObjectId(userId));
+      
+      const pipeline: any[] = [];
+
+      const queryArray = [query.title];
+      const fieldsArray = ["title"];
+      pipeline.push(addToPipeline(queryArray, fieldsArray));
+
+      pipeline.push({
+        $match: {
+          postedBy: { $in: followingIds },
+        },
+      });
+
+      pipeline.push(
         {
           $lookup: {
             from: "users",
@@ -198,42 +240,43 @@ class PostService {
           $project: {
             __v: 0,
             isDeleted: 0,
-            createdAt: 0,
-            updatedAt: 0,
             "postedBy.__v": 0,
             "postedBy.isDeleted": 0,
             "postedBy.createdAt": 0,
             "postedBy.updatedAt": 0,
+            "postedBy.password": 0,
           },
-        },
-      ];
-      const postDetails: IPost[] = await this.postDao.getPostById(pipeline);
+        }
+      );
+      if (query.limit === "0") {
+        throw { status: 400, message: "Limit cannot be 0" };
+      }
+      if (query.pageNumber === "0") {
+        throw { status: 400, message: "Page number cannot be 0" };
+      }
+      const pageNumber = parseInt(query.pageNumber || "1", 10);
+      const limit = parseInt(query.limit || "10", 10);
+      const skip = (pageNumber - 1) * limit;
+      const sort = query.sort === "dec" ? -1 : 1;
 
-      if (!postDetails.length) {
+      pipeline.push({ $skip: skip });
+      pipeline.push({ $limit: limit });
+      pipeline.push({ $sort: { createdAt: sort } });
+
+      const posts: IPost[] = await this.postDao.getPostById(pipeline);
+      if (!posts?.length) {
         throw { status: 404, message: "Posts not found!" };
       }
-      const filteredPosts = await Promise.all(
-        postDetails.map(async (post) => {
-          const postedById = post.postedBy._id.toString();
-          if (userId === postedById) {
-            return post;
-          }
-          const follow: IFollow | null = await this.followDao.findFollow({
-            userId: new Types.ObjectId(userId),
-            followingId: new Types.ObjectId(postedById),
-            status: Status.ACCEPTED,
-          });
-          return follow ? post : null;
-        })
-      );
-
-      return filteredPosts.filter((post) => post !== null);
+      return posts;
     } catch (error: any) {
       throw error;
     }
   };
 
-  public deletePost = async (postId: string, userId: string): Promise<any> => {
+  public deletePost = async (
+    postId: string,
+    userId: string
+  ): Promise<IPost | null> => {
     try {
       if (!isObjectIdOrHexString(postId)) {
         throw { status: 400, message: "Invalid post id" };
@@ -241,7 +284,11 @@ class PostService {
       const pipeline: any[] = [
         { $match: { _id: new Types.ObjectId(postId), isDeleted: false } },
       ];
+
       const postDetails: IPost[] = await this.postDao.getPostById(pipeline);
+      if (postDetails[0].postedBy.toString() !== userId) {
+        throw { status: 400, message: "You can not delete this post" };
+      }
       if (!postDetails.length) {
         throw { status: 404, message: "Post not found!" };
       }

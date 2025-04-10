@@ -2,14 +2,6 @@ import Joi from "joi";
 import { IUser } from "./user.model";
 
 export const validateUser = (data: IUser, isPatch: boolean = false) => {
-  const allowedMimeTypes = [
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "image/gif",
-  ];
-  const MAX_FILE_SIZE = 5 * 1024 * 1024;
-
   const userSchema = Joi.object({
     firstName: Joi.string()
       .empty("")
@@ -76,9 +68,9 @@ export const validateUser = (data: IUser, isPatch: boolean = false) => {
         "string.empty": "username cannot be empty",
         "any.required": "username is required",
       }),
-    bio: Joi.string().min(100).messages({
+    bio: Joi.string().max(100).messages({
       "string.base": "bio must be a string",
-      "string.min": "bio should have at least 100 characters",
+      "string.min": "bio should can be max 100 characters",
     }),
     isPrivate: Joi.boolean().messages({
       "boolean.base": "isPrivate must be true or false",

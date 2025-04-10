@@ -1,8 +1,10 @@
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import AuthMiddleware from "../../middleware/authVerification";
 import passwordManager from "../../utils/password.util";
 import UserDao from "../user/user.dao";
 import { ResponseHandler } from "../../utils/responseHandler.util";
+import { IUser } from "../user/user.model";
+import { ITokens } from "../../common/interfaces";
 
 class AuthService {
   private UserDao: UserDao;
@@ -14,20 +16,16 @@ class AuthService {
   public authenticateUser = async (
     email: string,
     password: string
-  ): Promise<any> => {
+  ): Promise<ITokens> => {
     try {
-      if (!email || !password) {
-        throw { status: 400, message: "Email and password required" };
-      }
-
-      const pipeline = [{ $match: { email, isDeleted: false } }];
-      const user = await this.UserDao.getUserByIdOrEmail(pipeline);
+      const pipeline: any[] = [{ $match: { email, isDeleted: false } }];
+      const user: IUser[] = await this.UserDao.getUserByIdOrEmail(pipeline);
 
       if (!user.length) {
         throw { status: 400, message: "Invalid email or password" };
       }
 
-      const isPasswordValid = await passwordManager.comparePassword(
+      const isPasswordValid: boolean = await passwordManager.comparePassword(
         password,
         user[0].password
       );
@@ -40,9 +38,14 @@ class AuthService {
     }
   };
 
-  public GenerateAccessToken = async (user: any): Promise<any> => {
-    const accessSecretKey = process.env.ACCESS_SECRET_KEY || "Access secret";
-    const refreshSecretKey = process.env.REFRESH_SECRET_KEY || "Refresh secret";
+  public GenerateAccessToken = async (
+    user: IUser | JwtPayload
+  ): Promise<ITokens> => {
+    const accessSecretKey: string =
+      process.env.ACCESS_SECRET_KEY || "Access secret";
+    const refreshSecretKey: string =
+      process.env.REFRESH_SECRET_KEY || "Refresh secret";
+    console.log(user);
 
     try {
       const accessToken = await jwt.sign(
@@ -67,15 +70,20 @@ class AuthService {
     }
   };
 
-  public GenerateRefreshToken = async (refreshToken: string): Promise<any> => {
-    const refreshSecretKey = process.env.REFRESH_SECRET_KEY || "Refresh secret";
+  public GenerateRefreshToken = async (
+    refreshToken: string
+  ): Promise<ITokens> => {
+    const refreshSecretKey: string =
+      process.env.REFRESH_SECRET_KEY || "Refresh secret";
 
     try {
-      const verifyRefreshToken = await jwt.verify(
+      const verifyRefreshToken = (await jwt.verify(
         refreshToken,
         refreshSecretKey
+      )) as JwtPayload;
+      const tokens: ITokens = await this.GenerateAccessToken(
+        verifyRefreshToken
       );
-      const tokens = await this.GenerateAccessToken(verifyRefreshToken);
       return tokens;
     } catch (error: any) {
       throw error;
