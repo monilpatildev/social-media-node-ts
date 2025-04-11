@@ -4,6 +4,8 @@ import { validatePost } from "./post.validation";
 import PostService from "./post.service";
 import { ValidationResult } from "joi";
 import { IPost } from "./post.model";
+import { IGetAllPosts } from "../../common/interfaces";
+import { HttpStatusCode } from "../../common/httpStatusCode";
 
 class PostController {
   private postService: PostService;
@@ -22,11 +24,18 @@ class PostController {
         const errorMessages = postValidate.error.details
           .map((detail) => detail.message)
           .join(", ");
-        console.log(errorMessages);
-        return ResponseHandler.error(response, 400, errorMessages);
+        return ResponseHandler.error(
+          response,
+          HttpStatusCode.BAD_REQUEST,
+          errorMessages
+        );
       }
       if (!request.files?.length) {
-        return ResponseHandler.error(response, 400, "Post image is required");
+        return ResponseHandler.error(
+          response,
+          HttpStatusCode.BAD_REQUEST,
+          "Post image is required"
+        );
       }
       await this.postService.createPost(
         request.body,
@@ -35,13 +44,13 @@ class PostController {
       );
       return ResponseHandler.success(
         response,
-        201,
+        HttpStatusCode.CREATED,
         "Post created successfully!"
       );
     } catch (error: any) {
       return ResponseHandler.error(
         response,
-        error.status || 500,
+        error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
         error.message || "Internal server error"
       );
     }
@@ -53,16 +62,31 @@ class PostController {
   ): Promise<any> => {
     try {
       const postValidate: ValidationResult = validatePost(request.body, true);
+      if (!request.params.id) {
+        return ResponseHandler.error(
+          response,
+          HttpStatusCode.BAD_REQUEST,
+          "Post id required"
+        );
+      }
+      if (!request.body) {
+        return ResponseHandler.error(
+          response,
+          HttpStatusCode.BAD_REQUEST,
+          "You provide nothing to update!"
+        );
+      }
       if (postValidate.error) {
         const errorMessages = postValidate.error.details
           .map((detail) => detail.message)
           .join(", ");
-        console.log(errorMessages);
-        return ResponseHandler.error(response, 400, errorMessages);
+        return ResponseHandler.error(
+          response,
+          HttpStatusCode.BAD_REQUEST,
+          errorMessages
+        );
       }
-      if (!request.params.id) {
-        return ResponseHandler.error(response, 400, "Post id required");
-      }
+
       const updatedPost: IPost = await this.postService.updatePost(
         request.body,
         (request as any).userData._id,
@@ -71,14 +95,14 @@ class PostController {
       );
       return ResponseHandler.success(
         response,
-        200,
+        HttpStatusCode.OK,
         "Post updated successfully!",
         updatedPost
       );
     } catch (error: any) {
       return ResponseHandler.error(
         response,
-        error.status || 500,
+        error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
         error.message || "Internal server error"
       );
     }
@@ -90,7 +114,11 @@ class PostController {
   ): Promise<any> => {
     try {
       if (!request.params.id) {
-        return ResponseHandler.error(response, 400, "Post id required");
+        return ResponseHandler.error(
+          response,
+          HttpStatusCode.BAD_REQUEST,
+          "Post id required"
+        );
       }
       const foundPost: IPost[] = await this.postService.getPost(
         request.params.id,
@@ -98,14 +126,14 @@ class PostController {
       );
       return ResponseHandler.success(
         response,
-        200,
+        HttpStatusCode.OK,
         "Post fetch successFully!",
         foundPost[0]
       );
     } catch (error: any) {
       return ResponseHandler.error(
         response,
-        error.status || 500,
+        error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
         error.message || "Internal server error"
       );
     }
@@ -116,19 +144,20 @@ class PostController {
     response: Response
   ): Promise<any> => {
     try {
-      const foundPost: IPost[]= await this.postService.getAllPost(
-        (request as any).userData._id,request.query
+      const foundPost: IGetAllPosts = await this.postService.getAllPost(
+        (request as any).userData._id,
+        request.query
       );
       return ResponseHandler.success(
         response,
-        200,
-        `Posts ${foundPost.length} fetch successFully!`,
+        HttpStatusCode.OK,
+        `Posts fetch successFully!`,
         foundPost
       );
     } catch (error: any) {
       return ResponseHandler.error(
         response,
-        error.status || 500,
+        error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
         error.message || "Internal server error"
       );
     }
@@ -140,7 +169,11 @@ class PostController {
   ): Promise<any> => {
     try {
       if (!request.params.id) {
-        return ResponseHandler.error(response, 400, "Post id required");
+        return ResponseHandler.error(
+          response,
+          HttpStatusCode.BAD_REQUEST,
+          "Post id required"
+        );
       }
       await this.postService.deletePost(
         request.params.id,
@@ -148,13 +181,13 @@ class PostController {
       );
       return ResponseHandler.success(
         response,
-        200,
+        HttpStatusCode.OK,
         "Post deleted successFully!"
       );
     } catch (error: any) {
       return ResponseHandler.error(
         response,
-        error.status || 500,
+        error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
         error.message || "Internal server error"
       );
     }

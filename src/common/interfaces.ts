@@ -1,3 +1,6 @@
+import { Response } from "express";
+import { IPost } from "../components/post/post.model";
+import { IUser } from "../components/user/user.model";
 import { Types } from "mongoose";
 import { Status } from "./enums";
 
@@ -20,14 +23,14 @@ export interface IFollowQuery {
 
 export interface IFilterQuery {
   username?: string;
-  name?: string;
+  firstName?: string;
   pageNumber?: string;
   limit?: string;
   sort?: string;
 }
 
 export interface IFilterPostQuery {
-  title?: string;
+  searchText?: string;
   pageNumber?: string;
   limit?: string;
   sort?: string;
@@ -50,8 +53,6 @@ export interface IApiResponse<T = any> {
   data?: T;
 }
 
-import { Response } from "express";
-
 export interface IResponseHandlerStatics {
   success(
     response: Response,
@@ -64,4 +65,20 @@ export interface IResponseHandlerStatics {
     status?: number,
     message?: string
   ): Response<IApiResponse<any>>;
+}
+
+export interface IGetAllPosts {
+  posts: IPost[] | null;
+  totalPost: number;
+}
+
+export interface IGetAllUsers {
+  users: IUser[] | null;
+  totalUsers: number;
+}
+export interface IAuthToken {
+  _id: string;
+  email: string;
+  iat: number;
+  exp: number;
 }

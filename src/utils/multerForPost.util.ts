@@ -83,11 +83,3 @@ export const updateFileName = (userId: string, postId: string): string => {
   fs.rename(postDir, newPath);
   return newPath;
 };
-
-// export const deletePost = (userId: string, idOfPost: string): void => {
-//   const postDir = pathResolve(
-//     __dirname,
-//     `../uploads/users-post/${userId}/${idOfPost}`
-//   );
-//   fs.rm(postDir, { recursive: true });
-// };

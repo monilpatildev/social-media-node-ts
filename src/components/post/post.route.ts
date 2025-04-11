@@ -7,21 +7,21 @@ const postRoute: Router = Router();
 
 postRoute.post(
   "/",
-  AuthMiddleware.authenticate,
-  ImageUploadMiddleware.uploadPosts,
+  AuthMiddleware.authenticate(),
+  ImageUploadMiddleware.uploadPosts(),
   PostController.createPost
 );
 postRoute.patch(
   "/:id",
-  AuthMiddleware.authenticate,
-  ImageUploadMiddleware.uploadPosts,
+  AuthMiddleware.authenticate(),
+  ImageUploadMiddleware.uploadPosts(true),
   PostController.updatePost
 );
-postRoute.get("/", AuthMiddleware.authenticate, PostController.getAllPost);
-postRoute.get("/:id", AuthMiddleware.authenticate, PostController.getPost);
+postRoute.get("/", AuthMiddleware.authenticate(), PostController.getAllPost);
+postRoute.get("/:id", AuthMiddleware.authenticate(), PostController.getPost);
 postRoute.delete(
   "/:id",
-  AuthMiddleware.authenticate,
+  AuthMiddleware.authenticate(),
   PostController.deletePost
 );
 

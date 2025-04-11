@@ -1,10 +1,11 @@
-import jwt, { JwtPayload } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import AuthMiddleware from "../../middleware/authVerification";
 import passwordManager from "../../utils/password.util";
 import UserDao from "../user/user.dao";
 import { ResponseHandler } from "../../utils/responseHandler.util";
 import { IUser } from "../user/user.model";
-import { ITokens } from "../../common/interfaces";
+import { IAuthToken, ITokens } from "../../common/interfaces";
+import { HttpStatusCode } from "../../common/httpStatusCode";
 
 class AuthService {
   private UserDao: UserDao;
@@ -22,7 +23,10 @@ class AuthService {
       const user: IUser[] = await this.UserDao.getUserByIdOrEmail(pipeline);
 
       if (!user.length) {
-        throw { status: 400, message: "Invalid email or password" };
+        throw {
+          status: HttpStatusCode.BAD_REQUEST,
+          message: "Invalid email or password",
+        };
       }
 
       const isPasswordValid: boolean = await passwordManager.comparePassword(
@@ -30,7 +34,10 @@ class AuthService {
         user[0].password
       );
       if (!isPasswordValid) {
-        throw { status: 400, message: "Invalid email or password" };
+        throw {
+          status: HttpStatusCode.BAD_REQUEST,
+          message: "Invalid email or password",
+        };
       }
       return this.GenerateAccessToken(user[0]);
     } catch (error) {
@@ -39,13 +46,12 @@ class AuthService {
   };
 
   public GenerateAccessToken = async (
-    user: IUser | JwtPayload
+    user: IUser | IAuthToken
   ): Promise<ITokens> => {
     const accessSecretKey: string =
       process.env.ACCESS_SECRET_KEY || "Access secret";
     const refreshSecretKey: string =
       process.env.REFRESH_SECRET_KEY || "Refresh secret";
-    console.log(user);
 
     try {
       const accessToken = await jwt.sign(
@@ -77,10 +83,10 @@ class AuthService {
       process.env.REFRESH_SECRET_KEY || "Refresh secret";
 
     try {
-      const verifyRefreshToken = (await jwt.verify(
+      const verifyRefreshToken = await jwt.verify(
         refreshToken,
         refreshSecretKey
-      )) as JwtPayload;
+      ) as IAuthToken
       const tokens: ITokens = await this.GenerateAccessToken(
         verifyRefreshToken
       );

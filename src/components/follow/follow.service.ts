@@ -4,6 +4,7 @@ import UserDao from "../user/user.dao";
 import FollowModel, { IFollow } from "./follow.model";
 import { IUser } from "../user/user.model";
 import { Status } from "../../common/enums";
+import { HttpStatusCode } from "../../common/httpStatusCode";
 
 class FollowService {
   private followDao: FollowDao;
@@ -19,11 +20,18 @@ class FollowService {
     followingId: string
   ): Promise<string> => {
     try {
+      
       if (!isObjectIdOrHexString(followingId)) {
-        throw { status: 400, message: "Invalid user id" };
+        throw {
+          status: HttpStatusCode.BAD_REQUEST,
+          message: "Invalid user id",
+        };
       }
       if (userId == followingId) {
-        throw { status: 400, message: "You cannot send request to yourself" };
+        throw {
+          status: HttpStatusCode.BAD_REQUEST,
+          message: "You cannot send request to yourself",
+        };
       }
       const pipeline = [
         {
@@ -44,7 +52,7 @@ class FollowService {
       );
 
       if (!foundUserResult || !foundUserResult.length) {
-        throw { status: 404, message: "User not found" };
+        throw { status: HttpStatusCode.NOT_FOUND, message: "User not found" };
       }
 
       const existingFollow: IFollow | null = await this.followDao.findFollow({
@@ -54,12 +62,12 @@ class FollowService {
 
       if (existingFollow?.status === Status.ACCEPTED) {
         throw {
-          status: 400,
+          status: HttpStatusCode.BAD_REQUEST,
           message: "You are already following this user",
         };
       } else if (existingFollow && existingFollow?.status === Status.PENDING) {
         throw {
-          status: 400,
+          status: HttpStatusCode.BAD_REQUEST,
           message: "You have already requested this user",
         };
       }
@@ -79,7 +87,7 @@ class FollowService {
       );
       if (!createdFollow) {
         throw {
-          status: 400,
+          status: HttpStatusCode.BAD_REQUEST,
           message: "Internal server error",
         };
       }
@@ -95,7 +103,10 @@ class FollowService {
   ): Promise<IFollow | null> => {
     try {
       if (!isObjectIdOrHexString(followingId)) {
-        throw { status: 400, message: "Invalid user id" };
+        throw {
+          status: HttpStatusCode.BAD_REQUEST,
+          message: "Invalid user id",
+        };
       }
       const followRecord: IFollow | null = await this.followDao.findFollow({
         userId: new Types.ObjectId(userId),
@@ -103,7 +114,7 @@ class FollowService {
       });
 
       if (!followRecord) {
-        throw { status: 404, message: "User not found" };
+        throw { status: HttpStatusCode.NOT_FOUND, message: "User not found" };
       }
 
       const removedRecord: IFollow | null = await this.followDao.deleteFollow({
@@ -140,13 +151,16 @@ class FollowService {
       );
       if (foundUserResult[0].isPrivate === false) {
         throw {
-          status: 400,
+          status: HttpStatusCode.BAD_REQUEST,
           message: "You account is public , request already accepted",
         };
       }
 
       if (!isObjectIdOrHexString(followingId)) {
-        throw { status: 400, message: "Invalid user id" };
+        throw {
+          status: HttpStatusCode.BAD_REQUEST,
+          message: "Invalid user id",
+        };
       }
 
       const existingFollowRequest: IFollow | null =
@@ -157,12 +171,12 @@ class FollowService {
 
       if (existingFollowRequest?.status === Status.ACCEPTED) {
         throw {
-          status: 400,
+          status: HttpStatusCode.BAD_REQUEST,
           message: "Request already accepted",
         };
       } else if (!existingFollowRequest) {
         throw {
-          status: 400,
+          status: HttpStatusCode.BAD_REQUEST,
           message: "Request not found",
         };
       }
@@ -194,7 +208,7 @@ class FollowService {
       );
       if (foundUserResult[0].isPrivate === false) {
         throw {
-          status: 400,
+          status: HttpStatusCode.BAD_REQUEST,
           message: "You account is public , no such request found",
         };
       }
@@ -211,7 +225,10 @@ class FollowService {
         getRequestPipeline
       );
       if (!allRequests) {
-        throw { status: 404, message: "No requests found" };
+        throw {
+          status: HttpStatusCode.NOT_FOUND,
+          message: "No requests found",
+        };
       }
       return allRequests as IFollow[];
     } catch (error: any) {

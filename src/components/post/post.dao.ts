@@ -1,3 +1,4 @@
+import { IGetAllPosts } from "../../common/interfaces";
 import PostModel, { IPost } from "./post.model";
 
 class PostDao {
@@ -8,6 +9,17 @@ class PostDao {
       throw error;
     }
   };
+
+  public getAllPosts = async (
+    pipeline: any[]
+  ): Promise<IGetAllPosts | any[]> => {
+    try {
+      return await PostModel.aggregate(pipeline);
+    } catch (error: any) {
+      throw error;
+    }
+  };
+
   public createPost = async (postData: IPost): Promise<IPost> => {
     try {
       return await PostModel.create(postData);
@@ -21,7 +33,10 @@ class PostDao {
     postData: IPost
   ): Promise<IPost | null> => {
     try {
-      return await PostModel.findByIdAndUpdate(id, postData, { new: true });
+      return await PostModel.findByIdAndUpdate(id, postData, {
+        new: true,
+        upsert: true,
+      });
     } catch (error: any) {
       throw error;
     }

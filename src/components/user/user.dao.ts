@@ -1,3 +1,4 @@
+import { IGetAllUsers } from "../../common/interfaces";
 import UserModel, { IUser } from "./user.model";
 
 class UserDao {
@@ -10,6 +11,16 @@ class UserDao {
   };
 
   public getUserByIdOrEmail = async (pipeline: any[]): Promise<IUser[]> => {
+    try {
+      return await UserModel.aggregate(pipeline);
+    } catch (error: any) {
+      throw error;
+    }
+  };
+
+  public getAllUsers = async (
+    pipeline: any[]
+  ): Promise<IGetAllUsers | any[]> => {
     try {
       return await UserModel.aggregate(pipeline);
     } catch (error: any) {

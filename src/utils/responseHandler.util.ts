@@ -1,7 +1,6 @@
 import { Response } from "express";
 import { IApiResponse } from "../common/interfaces";
 
-
 export class ResponseHandler {
   static success(
     response: Response,

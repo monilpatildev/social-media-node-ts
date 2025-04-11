@@ -6,50 +6,50 @@ import { uploadProfile } from "../../utils/multerForProfile.util";
 
 const userRoute: Router = Router();
 
-userRoute.get("/", AuthMiddleware.authenticate, UserController.getAllUsers);
+userRoute.get("/", AuthMiddleware.authenticate(), UserController.getAllUsers);
 userRoute.patch(
   "/profile",
-  AuthMiddleware.authenticate,
-  ImageUploadMiddleware.uploadProfile,
+  AuthMiddleware.authenticate(),
+  ImageUploadMiddleware.uploadProfile(),
   UserController.updateUser
 );
 userRoute.get(
   "/profile",
-  AuthMiddleware.authenticate,
+  AuthMiddleware.authenticate(),
   UserController.getLoggedUser
 );
 userRoute.get(
   "/profile/:id",
-  AuthMiddleware.authenticate,
+  AuthMiddleware.authenticate(),
   UserController.getUser
 );
 userRoute.delete(
   "/:id",
-  AuthMiddleware.authenticate,
+  AuthMiddleware.authenticate(),
   UserController.deleteUser
 );
 
 userRoute.post(
   "/follow",
-  AuthMiddleware.authenticate,
+  AuthMiddleware.authenticate(),
   UserController.followUser
 );
 
 userRoute.post(
   "/unfollow",
-  AuthMiddleware.authenticate,
+  AuthMiddleware.authenticate(),
   UserController.unfollowUser
 );
 
 userRoute.get(
   "/get-requests",
-  AuthMiddleware.authenticate,
+  AuthMiddleware.authenticate(),
   UserController.getFollowRequests
 );
 
 userRoute.post(
   "/accept-request",
-  AuthMiddleware.authenticate,
+  AuthMiddleware.authenticate(),
   UserController.acceptFollowRequest
 );
 

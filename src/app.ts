@@ -8,6 +8,7 @@ import cors from "cors";
 import MongoDBConnection from "./config/dbConnection";
 import InitialRoute from "./config/routes";
 import { ResponseHandler } from "./utils/responseHandler.util";
+import { HttpStatusCode } from "./common/httpStatusCode";
 
 config();
 
@@ -37,7 +38,11 @@ app.use(limiter);
 app.use(
   (error: any, request: Request, response: Response, next: NextFunction) => {
     if (error instanceof SyntaxError && "body" in error) {
-      ResponseHandler.error(response, 400, "Invalid JSON syntax");
+      ResponseHandler.error(
+        response,
+        HttpStatusCode.BAD_REQUEST,
+        "Invalid JSON syntax"
+      );
     } else {
       next();
     }
@@ -46,7 +51,11 @@ app.use(
 
 app.use(
   (error: Error, request: Request, response: Response, next: NextFunction) => {
-    ResponseHandler.error(response, 500, error.message);
+    ResponseHandler.error(
+      response,
+      HttpStatusCode.INTERNAL_SERVER_ERROR,
+      error.message
+    );
   }
 );
 

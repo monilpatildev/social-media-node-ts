@@ -1,11 +1,14 @@
 const addToPipeline = (
   queries: (string | undefined)[],
-  fieldsArray: string[]
+  fieldsArray: string[],
+  isPost: boolean = false
 ): object => {
   const conditions = queries.reduce((acc, query, index) => {
-    acc.push({
-      isDeleted: false,
-    });
+    if (!isPost) {
+      acc.push({
+        isDeleted: false,
+      });
+    }
     if (query) {
       acc.push({
         [fieldsArray[index]]: { $regex: query, $options: "i" },
@@ -19,7 +22,9 @@ const addToPipeline = (
     return { $match: {} };
   }
 
-  return { $match: { $and: conditions } };
+  return isPost
+    ? { $match: { $or: conditions } }
+    : { $match: { $and: conditions } };
 };
 
 export default addToPipeline;

@@ -5,6 +5,7 @@ import { ValidationResult } from "joi";
 import { validateUser } from "./user.validation";
 import FollowService from "../follow/follow.service";
 import { Status } from "../../common/enums";
+import { HttpStatusCode } from "../../common/httpStatusCode";
 
 class UserController {
   private userService: UserService;
@@ -23,7 +24,11 @@ class UserController {
         (!Object.keys(request.body).length || !request.body) &&
         !request.file
       ) {
-        return ResponseHandler.error(response, 400, "No body found!");
+        return ResponseHandler.error(
+          response,
+          HttpStatusCode.BAD_REQUEST,
+          "No body found!"
+        );
       }
       const validationResult: ValidationResult = await validateUser(
         request.body,
@@ -34,8 +39,11 @@ class UserController {
         const errorMessages = validationResult.error.details
           .map((detail) => detail.message)
           .join(", ");
-        console.log(errorMessages);
-        return ResponseHandler.error(response, 400, errorMessages);
+        return ResponseHandler.error(
+          response,
+          HttpStatusCode.BAD_REQUEST,
+          errorMessages
+        );
       }
 
       const newUser = await this.userService.updateUser(
@@ -45,14 +53,14 @@ class UserController {
       );
       return ResponseHandler.success(
         response,
-        200,
+        HttpStatusCode.OK,
         "Your profile updated successfully!",
         newUser
       );
     } catch (error: any) {
       return ResponseHandler.error(
         response,
-        error.status || 500,
+        error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
         error.message || "Internal server error"
       );
     }
@@ -66,13 +74,13 @@ class UserController {
       await this.userService.deleteUser((request as any).userData._id);
       return ResponseHandler.success(
         response,
-        200,
+        HttpStatusCode.OK,
         "Account deleted successFully!"
       );
     } catch (error: any) {
       return ResponseHandler.error(
         response,
-        error.status || 500,
+        error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
         error.message || "internal server error"
       );
     }
@@ -83,20 +91,26 @@ class UserController {
     response: Response
   ): Promise<any> => {
     try {
+      console.log(request.params.id);
+
       if (!request.params.id) {
-        return ResponseHandler.error(response, 400, "User id required");
+        return ResponseHandler.error(
+          response,
+          HttpStatusCode.BAD_REQUEST,
+          "User id required"
+        );
       }
       const foundUser = await this.userService.getUser(request.params.id);
       return ResponseHandler.success(
         response,
-        200,
+        HttpStatusCode.OK,
         "User fetch successFully!",
         foundUser[0]
       );
     } catch (error: any) {
       return ResponseHandler.error(
         response,
-        error.status || 500,
+        error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
         error.message || "internal server error"
       );
     }
@@ -112,14 +126,14 @@ class UserController {
       );
       return ResponseHandler.success(
         response,
-        200,
+        HttpStatusCode.OK,
         "Profile fetch successFully!",
         foundUser[0]
       );
     } catch (error: any) {
       return ResponseHandler.error(
         response,
-        error.status || 500,
+        error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
         error.message || "internal server error"
       );
     }
@@ -133,14 +147,14 @@ class UserController {
       const allUsers = await this.userService.getAllUser(request.query);
       return ResponseHandler.success(
         response,
-        200,
-        `Fetch ${allUsers.length} users`,
+        HttpStatusCode.OK,
+        `Fetch users successfully!`,
         allUsers
       );
     } catch (error: any) {
       return ResponseHandler.error(
         response,
-        error.status || 500,
+        error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
         error.message || "internal server error"
       );
     }
@@ -152,7 +166,11 @@ class UserController {
   ): Promise<any> => {
     try {
       if (!request.body.id) {
-        return ResponseHandler.error(response, 400, "User id required");
+        return ResponseHandler.error(
+          response,
+          HttpStatusCode.BAD_REQUEST,
+          "User id required"
+        );
       }
       const foundUserStatus: string = await this.followService.followUser(
         (request as any).userData._id,
@@ -162,11 +180,11 @@ class UserController {
         foundUserStatus === Status.PENDING
           ? "Sent follow request successFully!"
           : "Followed successFully!";
-      return ResponseHandler.success(response, 200, resMessage);
+      return ResponseHandler.success(response, HttpStatusCode.OK, resMessage);
     } catch (error: any) {
       return ResponseHandler.error(
         response,
-        error.status || 500,
+        error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
         error.message || "internal server error"
       );
     }
@@ -178,17 +196,25 @@ class UserController {
   ): Promise<any> => {
     try {
       if (!request.body.id) {
-        return ResponseHandler.error(response, 400, "User id required");
+        return ResponseHandler.error(
+          response,
+          HttpStatusCode.BAD_REQUEST,
+          "User id required"
+        );
       }
       await this.followService.unfollowUser(
         (request as any).userData._id,
         request.body.id
       );
-      return ResponseHandler.success(response, 200, "Unfollow successFully!");
+      return ResponseHandler.success(
+        response,
+        HttpStatusCode.OK,
+        "Unfollow successFully!"
+      );
     } catch (error: any) {
       return ResponseHandler.error(
         response,
-        error.status || 500,
+        error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
         error.message || "internal server error"
       );
     }
@@ -204,14 +230,14 @@ class UserController {
       );
       return ResponseHandler.success(
         response,
-        200,
+        HttpStatusCode.OK,
         "Fetch requests successFully!",
         foundUser
       );
     } catch (error: any) {
       return ResponseHandler.error(
         response,
-        error.status || 500,
+        error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
         error.message || "internal server error"
       );
     }
@@ -223,7 +249,11 @@ class UserController {
   ): Promise<any> => {
     try {
       if (!request.body.id) {
-        return ResponseHandler.error(response, 400, "User id required");
+        return ResponseHandler.error(
+          response,
+          HttpStatusCode.BAD_REQUEST,
+          "User id required"
+        );
       }
       await this.followService.acceptRequest(
         (request as any).userData._id,
@@ -231,13 +261,13 @@ class UserController {
       );
       return ResponseHandler.success(
         response,
-        200,
+        HttpStatusCode.OK,
         "Request accepted successFully!"
       );
     } catch (error: any) {
       return ResponseHandler.error(
         response,
-        error.status || 500,
+        error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
         error.message || "internal server error"
       );
     }

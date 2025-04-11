@@ -1,4 +1,8 @@
-import { IFilterQuery, IUploadedFile } from "./../../common/interfaces";
+import {
+  IFilterQuery,
+  IGetAllUsers,
+  IUploadedFile,
+} from "./../../common/interfaces";
 import UserDao from "./user.dao";
 import { IUser } from "./user.model";
 import passwordManager from "../../utils/password.util";
@@ -6,6 +10,7 @@ import { isObjectIdOrHexString, Types } from "mongoose";
 import addToPipeline from "../../service/pipeline.service";
 import path from "path";
 import fs from "fs";
+import { HttpStatusCode } from "../../common/httpStatusCode";
 
 class UserService {
   private userDao: UserDao;
@@ -27,7 +32,10 @@ class UserService {
         pipeline
       );
       if (existUser.length) {
-        throw { status: 400, message: "Email or username already used" };
+        throw {
+          status: HttpStatusCode.BAD_REQUEST,
+          message: "Email or username already used",
+        };
       }
       const { firstName, lastName, email, password, username } = userData;
       const hashedPassword: string = await passwordManager.hashPassword(
@@ -42,7 +50,10 @@ class UserService {
       } as IUser;
       const createUser: IUser = await this.userDao.createUser(user);
       if (!createUser) {
-        throw { status: 500, message: "Internal server error" };
+        throw {
+          status: HttpStatusCode.INTERNAL_SERVER_ERROR,
+          message: "Internal server error",
+        };
       }
       return createUser;
     } catch (error: any) {
@@ -75,12 +86,15 @@ class UserService {
         userData
       );
       if (!updatedUser) {
-        throw { status: 500, message: "Internal server error" };
+        throw {
+          status: HttpStatusCode.INTERNAL_SERVER_ERROR,
+          message: "Internal server error",
+        };
       }
       return updatedUser;
     } catch (error: any) {
       throw {
-        status: error.status || 500,
+        status: error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
         message: error.message || "Failed to update user",
       };
     }
@@ -89,7 +103,10 @@ class UserService {
   public getUser = async (id: string): Promise<IUser[]> => {
     try {
       if (!isObjectIdOrHexString(id)) {
-        throw { status: 400, message: "Invalid user id" };
+        throw {
+          status: HttpStatusCode.BAD_REQUEST,
+          message: "Invalid user id",
+        };
       }
 
       const pipeline: any[] = [
@@ -125,13 +142,7 @@ class UserService {
             password: 0,
             createdAt: 0,
             updatedAt: 0,
-            "following.requested": 0,
-            "following.createdAt": 0,
-            "following.updatedAt": 0,
             "following.__v": 0,
-            "followers.requested": 0,
-            "followers.createdAt": 0,
-            "followers.updatedAt": 0,
             "followers.__v": 0,
           },
         },
@@ -142,7 +153,7 @@ class UserService {
       );
 
       if (!userDetails.length) {
-        throw { status: 404, message: "User not found!" };
+        throw { status: HttpStatusCode.NOT_FOUND, message: "User not found!" };
       }
       return userDetails;
     } catch (error: any) {
@@ -150,11 +161,11 @@ class UserService {
     }
   };
 
-  public getAllUser = async (query: IFilterQuery): Promise<IUser[]> => {
+  public getAllUser = async (query: IFilterQuery): Promise<IGetAllUsers> => {
     try {
       const pipeline: any[] = [];
 
-      const queryArray = [query.name, query.username];
+      const queryArray = [query.firstName, query.username];
       const fieldsArray = ["firstName", "username"];
 
       pipeline.push(addToPipeline(queryArray, fieldsArray));
@@ -168,28 +179,47 @@ class UserService {
           createdAt: 0,
         },
       });
+
       if (query.limit === "0") {
-        throw { status: 400, message: "Limit cannot be 0" };
+        throw {
+          status: HttpStatusCode.BAD_REQUEST,
+          message: "Limit cannot be 0",
+        };
       }
       if (query.pageNumber === "0") {
-        throw { status: 400, message: "Page number cannot be 0" };
+        throw {
+          status: HttpStatusCode.BAD_REQUEST,
+          message: "Page number cannot be 0",
+        };
       }
       const pageNumber = parseInt(query.pageNumber || "1", 10);
       const limit = parseInt(query.limit || "10", 10);
       const skip = (pageNumber - 1) * limit;
-      // const sort = isObjectIdOrHexString
-      pipeline.push({ $skip: skip });
-      pipeline.push({ $limit: limit });
-      // pipeline.push({ $sort: { createdAt: sort } });
+      const sort = query.sort === "dec" ? -1 : 1;
 
-      const userDetails: IUser[] = await this.userDao.getUserByIdOrEmail(
+      pipeline.push({
+        $facet: {
+          data: [
+            { $sort: { username: sort } },
+            { $skip: skip },
+            { $limit: limit },
+          ],
+          totalUser: [{ $count: "count" }],
+        },
+      });
+
+      const result: IGetAllUsers | any = await this.userDao.getAllUsers(
         pipeline
       );
 
-      if (!userDetails.length) {
-        throw { status: 404, message: "User not found!" };
+      const users: IUser[] = result[0]?.data || [];
+      const totalUsers: number = result[0]?.totalUser[0]?.count || 0;
+
+      if (!users.length) {
+        throw { status: HttpStatusCode.NOT_FOUND, message: "User not found!" };
       }
-      return userDetails;
+
+      return { totalUsers, users };
     } catch (error: any) {
       throw error;
     }
@@ -199,7 +229,7 @@ class UserService {
     try {
       const deleteUser = await this.userDao.deleteUserById(id);
       if (!deleteUser) {
-        throw { status: 404, message: "User not found!" };
+        throw { status: HttpStatusCode.NOT_FOUND, message: "User not found!" };
       }
       return deleteUser;
     } catch (error: any) {

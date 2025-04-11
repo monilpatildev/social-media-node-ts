@@ -5,7 +5,6 @@ export interface IFollow extends Document {
   userId: Types.ObjectId;
   followingId: Types.ObjectId;
   status: Status;
-  __v: number;
   _id: Types.ObjectId;
 }
 
