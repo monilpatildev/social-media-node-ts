@@ -1,8 +1,6 @@
 import jwt from "jsonwebtoken";
-import AuthMiddleware from "../../middleware/authVerification";
 import passwordManager from "../../utils/password.util";
 import UserDao from "../user/user.dao";
-import { ResponseHandler } from "../../utils/responseHandler.util";
 import { IUser } from "../user/user.model";
 import { IAuthToken, ITokens } from "../../common/interfaces";
 import { HttpStatusCode } from "../../common/httpStatusCode";
@@ -83,10 +81,10 @@ class AuthService {
       process.env.REFRESH_SECRET_KEY || "Refresh secret";
 
     try {
-      const verifyRefreshToken = await jwt.verify(
+      const verifyRefreshToken = (await jwt.verify(
         refreshToken,
         refreshSecretKey
-      ) as IAuthToken
+      )) as IAuthToken;
       const tokens: ITokens = await this.GenerateAccessToken(
         verifyRefreshToken
       );

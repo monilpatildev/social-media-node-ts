@@ -7,7 +7,7 @@ export class ResponseHandler {
     status: number,
     message: string,
     data?: any
-  ): Response<IApiResponse<any>> {
+  ): Response<IApiResponse> {
     return response.status(status).json({
       status,
       success: true,
@@ -20,7 +20,7 @@ export class ResponseHandler {
     response: Response,
     status: number = 500,
     message: string = "Internal server error."
-  ): Response<IApiResponse<any>> {
+  ): Response<IApiResponse> {
     return response.status(status).json({
       status,
       success: false,

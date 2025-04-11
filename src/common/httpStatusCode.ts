@@ -76,7 +76,7 @@ export const HttpStatusCode = {
   MULTI_STATUS: 207,
 
   /**
-   * The members of a DAV binding have already been enumerated in a preceding part of the (multistatus) response,
+   * The members of a DAV binding have already been enumerated in a preceding part of the (multiStatus) response,
    * and are not being included again.
    */
   ALREADY_REPORTED: 208,
@@ -104,7 +104,6 @@ export const HttpStatusCode = {
    * The HTTP/1.0 specification (RFC 1945) required the client to perform a temporary redirect
    * (the original describing phrase was "Moved Temporarily"), but popular browsers implemented 302
    * with the functionality of a 303 See Other. Therefore, HTTP/1.1 added status codes 303 and 307
-   * to distinguish between the two behaviours. However, some Web applications and frameworks
    * use the 302 status code as if it were the 303.
    */
   FOUND: 302,
@@ -284,7 +283,7 @@ export const HttpStatusCode = {
   LOCKED: 423,
 
   /**
-   * The request failed due to failure of a previous request (e.g., a PROPPATCH).
+   * The request failed due to failure of a previous request.
    */
   FAILED_DEPENDENCY: 424,
 
@@ -372,8 +371,7 @@ export const HttpStatusCode = {
 
   /**
    * The client needs to authenticate to gain network access.
-   * Intended for use by intercepting proxies used to control access to the network (e.g., "captive portals" used
-   * to require agreement to Terms of Service before granting full Internet access via a Wi-Fi hotspot).
+   * Intended for use by intercepting proxies used to control access to the network.
    */
   NETWORK_AUTHENTICATION_REQUIRED: 511,
 };

@@ -1,11 +1,12 @@
+import PostService from "./post.service";
 import { Request, Response } from "express";
 import { ResponseHandler } from "../../utils/responseHandler.util";
 import { validatePost } from "./post.validation";
-import PostService from "./post.service";
 import { ValidationResult } from "joi";
 import { IPost } from "./post.model";
 import { IGetAllPosts } from "../../common/interfaces";
 import { HttpStatusCode } from "../../common/httpStatusCode";
+import { CustomRequest } from "../../middleware/authVerification";
 
 class PostController {
   private postService: PostService;
@@ -39,7 +40,7 @@ class PostController {
       }
       await this.postService.createPost(
         request.body,
-        (request as any).userData._id,
+        (request as CustomRequest).userData._id,
         (request as any).files
       );
       return ResponseHandler.success(
@@ -89,7 +90,7 @@ class PostController {
 
       const updatedPost: IPost = await this.postService.updatePost(
         request.body,
-        (request as any).userData._id,
+        (request as CustomRequest).userData._id,
         request.params.id,
         (request as any).files
       );
@@ -122,7 +123,7 @@ class PostController {
       }
       const foundPost: IPost[] = await this.postService.getPost(
         request.params.id,
-        (request as any).userData._id
+        (request as CustomRequest).userData._id
       );
       return ResponseHandler.success(
         response,
@@ -145,7 +146,7 @@ class PostController {
   ): Promise<any> => {
     try {
       const foundPost: IGetAllPosts = await this.postService.getAllPost(
-        (request as any).userData._id,
+        (request as CustomRequest).userData._id,
         request.query
       );
       return ResponseHandler.success(
@@ -177,7 +178,7 @@ class PostController {
       }
       await this.postService.deletePost(
         request.params.id,
-        (request as any).userData._id
+        (request as CustomRequest).userData._id
       );
       return ResponseHandler.success(
         response,

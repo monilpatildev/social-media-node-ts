@@ -6,6 +6,7 @@ import { validateUser } from "./user.validation";
 import FollowService from "../follow/follow.service";
 import { Status } from "../../common/enums";
 import { HttpStatusCode } from "../../common/httpStatusCode";
+import { CustomRequest } from "../../middleware/authVerification";
 
 class UserController {
   private userService: UserService;
@@ -48,7 +49,7 @@ class UserController {
 
       const newUser = await this.userService.updateUser(
         request.body,
-        (request as any).userData._id,
+        (request as CustomRequest).userData._id,
         request.file
       );
       return ResponseHandler.success(
@@ -71,7 +72,9 @@ class UserController {
     response: Response
   ): Promise<any> => {
     try {
-      await this.userService.deleteUser((request as any).userData._id);
+      await this.userService.deleteUser(
+        (request as CustomRequest).userData._id
+      );
       return ResponseHandler.success(
         response,
         HttpStatusCode.OK,
@@ -122,7 +125,7 @@ class UserController {
   ): Promise<any> => {
     try {
       const foundUser = await this.userService.getUser(
-        (request as any).userData._id
+        (request as CustomRequest).userData._id
       );
       return ResponseHandler.success(
         response,
@@ -173,7 +176,7 @@ class UserController {
         );
       }
       const foundUserStatus: string = await this.followService.followUser(
-        (request as any).userData._id,
+        (request as CustomRequest).userData._id,
         request.body.id
       );
       const resMessage =
@@ -203,7 +206,7 @@ class UserController {
         );
       }
       await this.followService.unfollowUser(
-        (request as any).userData._id,
+        (request as CustomRequest).userData._id,
         request.body.id
       );
       return ResponseHandler.success(
@@ -226,7 +229,7 @@ class UserController {
   ): Promise<any> => {
     try {
       const foundUser = await this.followService.getRequest(
-        (request as any).userData._id
+        (request as CustomRequest).userData._id
       );
       return ResponseHandler.success(
         response,
@@ -256,7 +259,7 @@ class UserController {
         );
       }
       await this.followService.acceptRequest(
-        (request as any).userData._id,
+        (request as CustomRequest).userData._id,
         request.body.id
       );
       return ResponseHandler.success(

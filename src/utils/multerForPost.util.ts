@@ -1,8 +1,9 @@
-import { NextFunction, Request, Response } from "express";
+import { Request } from "express";
 import multer from "multer";
 import { existsSync, promises as fs, mkdirSync } from "fs";
 import path, { resolve as pathResolve } from "path";
 import { ResponseHandler } from "./responseHandler.util";
+import { CustomRequest } from "../middleware/authVerification";
 
 interface MulterRequest extends Request {
   isFolderCleared?: boolean;
@@ -26,7 +27,7 @@ const fileStorage = multer.diskStorage({
     callback: DestinationCallback
   ): Promise<void> => {
     try {
-      const user = (request as any).userData;
+      const user = (request as CustomRequest).userData;
 
       if (request.params.id) {
         const postDir = pathResolve(

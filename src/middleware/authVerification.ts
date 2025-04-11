@@ -8,8 +8,8 @@ import { HttpStatusCode } from "../common/httpStatusCode";
 import { IAuthToken } from "../common/interfaces";
 config();
 
-interface CustomRequest extends Request {
-  userData?: any;
+export interface CustomRequest extends Request {
+  userData?: IAuthToken | any;
 }
 class AuthMiddleware {
   private static UserDao = new UserDao();
@@ -33,10 +33,10 @@ class AuthMiddleware {
           );
         } else {
           try {
-            const verifyRefreshToken = await jwt.verify(
+            const verifyRefreshToken = (await jwt.verify(
               accessToken,
               accessSecretKey
-            ) as IAuthToken
+            )) as IAuthToken;
 
             if (!isObjectIdOrHexString(verifyRefreshToken._id)) {
               return ResponseHandler.error(

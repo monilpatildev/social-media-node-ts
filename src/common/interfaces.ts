@@ -46,7 +46,7 @@ export interface IAuthenticateQuery {
   email: string;
 }
 
-export interface IApiResponse<T = any> {
+export interface IApiResponse {
   status: number;
   success: boolean;
   message: string;
@@ -59,12 +59,12 @@ export interface IResponseHandlerStatics {
     status: number,
     message: string,
     data?: any
-  ): Response<IApiResponse<any>>;
+  ): Response<IApiResponse>;
   error(
     response: Response,
     status?: number,
     message?: string
-  ): Response<IApiResponse<any>>;
+  ): Response<IApiResponse>;
 }
 
 export interface IGetAllPosts {

@@ -8,18 +8,18 @@ import { HttpStatusCode } from "../common/httpStatusCode";
 class ImageUploadMiddleware {
   static uploadProfile = (isPatch: boolean = false): RequestHandler => {
     return (request: Request, response: Response, next: NextFunction) => {
-      uploadProfile.single("profile")(request, response, (err: any) => {
-        if (err) {
-          if (err instanceof multer.MulterError) {
+      uploadProfile.single("profile")(request, response, (error: any) => {
+        if (error) {
+          if (error instanceof multer.MulterError) {
             let errorMessage = "";
-            switch (err.code) {
+            switch (error.code) {
               case "LIMIT_UNEXPECTED_FILE":
                 errorMessage = request.file
                   ? "Please upload a single file."
                   : "Please use 'profile' as the field name.";
                 break;
               default:
-                errorMessage = `Multer error: ${err.message}`;
+                errorMessage = `Multer error: ${error.message}`;
                 break;
             }
             return ResponseHandler.error(
@@ -46,7 +46,7 @@ class ImageUploadMiddleware {
             let errorMessage = "";
             switch (error.code) {
               case "LIMIT_UNEXPECTED_FILE":
-                errorMessage = "Please provide field name.";
+                errorMessage = "Please use 'posts' as the field name.";
                 break;
               case "LIMIT_FILE_SIZE":
                 errorMessage = "Image size could be 10 mb.";

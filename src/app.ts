@@ -2,8 +2,6 @@ import express, { Application, NextFunction, Request, Response } from "express";
 import { Server } from "http";
 import { config } from "dotenv";
 import { rateLimit } from "express-rate-limit";
-import path from "path";
-import multer from "multer";
 import cors from "cors";
 import MongoDBConnection from "./config/dbConnection";
 import InitialRoute from "./config/routes";

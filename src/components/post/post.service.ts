@@ -10,7 +10,7 @@ import path from "path";
 import addToPipeline from "../../service/pipeline.service";
 import { IPost } from "./post.model";
 import { updateFileName } from "../../utils/multerForPost.util";
-import { existsSync, mkdirSync, promises as fs } from "fs";
+import { promises as fs } from "fs";
 import { Status } from "../../common/enums";
 import { HttpStatusCode } from "../../common/httpStatusCode";
 
@@ -47,9 +47,7 @@ class PostService {
         images: imageStore,
       } as IPost;
 
-      const savedPost: IPost  = await this.postDao.createPost(
-        newPostData
-      );
+      const savedPost: IPost = await this.postDao.createPost(newPostData);
 
       if (!savedPost) {
         throw {

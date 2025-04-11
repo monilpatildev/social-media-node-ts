@@ -1,8 +1,9 @@
-import { NextFunction, Request, Response } from "express";
+import { Request } from "express";
 import multer from "multer";
 import { existsSync, promises as fs, mkdirSync } from "fs";
 import path, { resolve as pathResolve } from "path";
 import { ResponseHandler } from "./responseHandler.util";
+import { CustomRequest } from "../middleware/authVerification";
 
 type DestinationCallback = (error: Error | null, destination: string) => void;
 type FileNameCallback = (error: Error | null, filename: string) => void;
@@ -22,7 +23,7 @@ export const fileStorage = multer.diskStorage({
     callback: DestinationCallback
   ): Promise<void> => {
     try {
-      const user = (request as any).userData;
+      const user = (request as CustomRequest).userData;
       const userDir = pathResolve(
         __dirname,
         `../uploads/users-profile-picture/${user._id}`

@@ -3,7 +3,6 @@ import { ResponseHandler } from "../../utils/responseHandler.util";
 import { validateEmailPassword } from "../auth/auth.validation";
 import UserService from "../user/user.service";
 import AuthService from "./auth.service";
-import AuthMiddleware from "../../middleware/authVerification";
 import { ValidationResult } from "joi";
 import { validateUser } from "../user/user.validation";
 import { HttpStatusCode } from "../../common/httpStatusCode";

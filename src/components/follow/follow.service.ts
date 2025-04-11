@@ -1,7 +1,7 @@
 import { isObjectIdOrHexString, Types } from "mongoose";
 import FollowDao from "./follow.dao";
 import UserDao from "../user/user.dao";
-import FollowModel, { IFollow } from "./follow.model";
+import { IFollow } from "./follow.model";
 import { IUser } from "../user/user.model";
 import { Status } from "../../common/enums";
 import { HttpStatusCode } from "../../common/httpStatusCode";
@@ -20,7 +20,6 @@ class FollowService {
     followingId: string
   ): Promise<string> => {
     try {
-      
       if (!isObjectIdOrHexString(followingId)) {
         throw {
           status: HttpStatusCode.BAD_REQUEST,
