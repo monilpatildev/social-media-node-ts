@@ -4,6 +4,7 @@ import { IUser } from "./user.model";
 export const validateUser = (data: IUser, isPatch: boolean = false) => {
   const userSchema = Joi.object({
     firstName: Joi.string()
+      .trim()
       .empty("")
       .when("$isPatch", {
         is: true,
@@ -16,6 +17,7 @@ export const validateUser = (data: IUser, isPatch: boolean = false) => {
         "any.required": "firstName is required",
       }),
     lastName: Joi.string()
+      .trim()
       .empty("")
       .when("$isPatch", {
         is: true,
@@ -28,6 +30,7 @@ export const validateUser = (data: IUser, isPatch: boolean = false) => {
         "any.required": "lastName is required",
       }),
     email: Joi.string()
+      .trim()
       .empty("")
       .email()
       .lowercase()
@@ -43,6 +46,7 @@ export const validateUser = (data: IUser, isPatch: boolean = false) => {
         "any.required": "email is required",
       }),
     password: Joi.string()
+      .trim()
       .empty("")
       .min(8)
       .when("$isPatch", {
@@ -57,6 +61,7 @@ export const validateUser = (data: IUser, isPatch: boolean = false) => {
         "any.required": "password is required",
       }),
     username: Joi.string()
+      .trim()
       .empty("")
       .when("$isPatch", {
         is: true,
@@ -68,7 +73,7 @@ export const validateUser = (data: IUser, isPatch: boolean = false) => {
         "string.empty": "username cannot be empty",
         "any.required": "username is required",
       }),
-    bio: Joi.string().max(100).messages({
+    bio: Joi.string().trim().max(100).messages({
       "string.base": "bio must be a string",
       "string.min": "bio should can be max 100 characters",
     }),

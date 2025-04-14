@@ -4,6 +4,7 @@ import { IPost } from "./post.model";
 export const validatePost = (data: IPost, isPatch: boolean = false) => {
   const postSchema = Joi.object({
     title: Joi.string()
+      .trim()
       .empty("")
       .max(100)
       .when("$isPatch", {
@@ -18,6 +19,7 @@ export const validatePost = (data: IPost, isPatch: boolean = false) => {
         "any.required": "title is required",
       }),
     description: Joi.string()
+      .trim()
       .empty("")
       .max(500)
       .when("$isPatch", {

@@ -28,9 +28,11 @@ class UserService {
           { isDeleted: false },
         ],
       };
-      const existUser: IUser[] = await this.userDao.getUserByIdOrEmail(filter);
+      const existUser: IUser | null = await this.userDao.getUserByIdOrEmail(
+        filter
+      );
 
-      if (existUser.length) {
+      if (existUser) {
         throw {
           status: HttpStatusCode.BAD_REQUEST,
           message: "Email or username already used",
@@ -303,8 +305,18 @@ class UserService {
 
   public deleteUser = async (id: string): Promise<IUser> => {
     try {
+      const randomNum = Math.floor(Math.random() * 899999 + 100000);
+      const filter = {
+        _id: id,
+        isDeleted: false,
+      };
+      const existUser: IUser | null = await this.userDao.getUserByIdOrEmail(
+        filter
+      );
+
       const deleteUser = await this.userDao.updateUserById(id, {
         isDeleted: true,
+        email: `${existUser?.email}-${randomNum}`,
       });
       if (!deleteUser) {
         throw {

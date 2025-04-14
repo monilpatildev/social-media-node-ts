@@ -197,28 +197,27 @@ class PostService {
       const pipeline: any[] = [];
 
       // 1. Lookup the follows collection to get all followings for the current user.
-      pipeline.push({
-        $lookup: {
-          from: "follows",
-          let: { userId: new Types.ObjectId(userId) },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ["$userId", "$$userId"] },
-                    { $eq: ["$status", "accepted"] },
-                  ],
+      pipeline.push(
+        {
+          $lookup: {
+            from: "follows",
+            let: { userId: new Types.ObjectId(userId) },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$userId", "$$userId"] },
+                      { $eq: ["$status", "accepted"] },
+                    ],
+                  },
                 },
               },
-            },
-            { $project: { followingId: 1 } },
-          ],
-          as: "followings",
+              { $project: { followingId: 1 } },
+            ],
+            as: "followings",
+          },
         },
-      });
-
-      pipeline.push(
         {
           $addFields: {
             followingIds: {
@@ -237,10 +236,7 @@ class PostService {
           $match: {
             $expr: { $in: ["$postedBy", "$followingIds"] },
           },
-        }
-      );
-
-      pipeline.push(
+        },
         {
           $lookup: {
             from: "users",

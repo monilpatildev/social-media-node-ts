@@ -51,7 +51,7 @@ class AuthMiddleware {
               _id: new Types.ObjectId(verifyRefreshToken._id),
               isDeleted: false,
             });
-            if (!UserData.length) {
+            if (!UserData) {
               return ResponseHandler.error(
                 response,
                 HttpStatusCode.UNAUTHORIZED,

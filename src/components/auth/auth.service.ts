@@ -17,12 +17,12 @@ class AuthService {
     password: string
   ): Promise<ITokens> => {
     try {
-      const user: IUser[] = await this.UserDao.getUserByIdOrEmail({
+      const user: IUser | null = await this.UserDao.getUserByIdOrEmail({
         email: email,
         isDeleted: false,
       });
-      
-      if (!user.length) {
+
+      if (!user) {
         throw {
           status: HttpStatusCode.BAD_REQUEST,
           message: "Invalid email or password",
@@ -31,7 +31,7 @@ class AuthService {
 
       const isPasswordValid: boolean = await passwordManager.comparePassword(
         password,
-        user[0].password
+        user.password
       );
       if (!isPasswordValid) {
         throw {
@@ -39,7 +39,7 @@ class AuthService {
           message: "Invalid email or password",
         };
       }
-      return this.GenerateAccessToken(user[0]);
+      return this.GenerateAccessToken(user);
     } catch (error) {
       throw error;
     }

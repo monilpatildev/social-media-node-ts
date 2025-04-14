@@ -10,9 +10,9 @@ class UserDao {
     }
   };
 
-  public getUserByIdOrEmail = async (filter: any): Promise<IUser[]> => {
+  public getUserByIdOrEmail = async (filter: any): Promise<IUser | null> => {
     try {
-      return await UserModel.find(filter);
+      return await UserModel.findOne(filter);
     } catch (error: any) {
       throw error;
     }

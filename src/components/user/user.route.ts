@@ -25,7 +25,7 @@ userRoute.get(
   UserController.getUser
 );
 userRoute.delete(
-  "/:id",
+  "/",
   AuthMiddleware.authenticate(),
   UserController.deleteUser
 );

@@ -33,12 +33,13 @@ class FollowService {
         };
       }
 
-      const foundUserResult: IUser[] = await this.userDao.getUserByIdOrEmail({
-        _id: followingId,
-        isDeleted: false,
-      });
+      const foundUserResult: IUser | null =
+        await this.userDao.getUserByIdOrEmail({
+          _id: followingId,
+          isDeleted: false,
+        });
 
-      if (!foundUserResult || !foundUserResult.length) {
+      if (!foundUserResult) {
         throw { status: HttpStatusCode.NOT_FOUND, message: "User not found" };
       }
 
@@ -62,7 +63,7 @@ class FollowService {
         };
       }
 
-      const status = foundUserResult[0].isPrivate
+      const status = foundUserResult.isPrivate
         ? Status.PENDING
         : Status.ACCEPTED;
 
@@ -101,6 +102,7 @@ class FollowService {
       const followRecord: IFollow[] | null = await this.followDao.getFollow({
         userId: new Types.ObjectId(userId),
         followingId: new Types.ObjectId(followingId),
+        status: Status.ACCEPTED,
       });
 
       if (!followRecord.length) {
@@ -126,10 +128,11 @@ class FollowService {
     followingId: string
   ): Promise<IFollow> => {
     try {
-      const foundUserResult: IUser[] = await this.userDao.getUserByIdOrEmail({
-        _id: new Types.ObjectId(userId),
-      });
-      if (foundUserResult[0].isPrivate === false) {
+      const foundUserResult: IUser | null =
+        await this.userDao.getUserByIdOrEmail({
+          _id: new Types.ObjectId(userId),
+        });
+      if (foundUserResult?.isPrivate === false) {
         throw {
           status: HttpStatusCode.BAD_REQUEST,
           message: "You account is public , request already accepted",
@@ -173,11 +176,12 @@ class FollowService {
 
   public getRequest = async (userId: string): Promise<IFollow[]> => {
     try {
-      const foundUserResult: IUser[] = await this.userDao.getUserByIdOrEmail({
-        _id: new Types.ObjectId(userId),
-      });
+      const foundUserResult: IUser | null =
+        await this.userDao.getUserByIdOrEmail({
+          _id: new Types.ObjectId(userId),
+        });
 
-      if (foundUserResult[0].isPrivate === false) {
+      if (foundUserResult?.isPrivate === false) {
         throw {
           status: HttpStatusCode.BAD_REQUEST,
           message: "You account is public , no such request found",
