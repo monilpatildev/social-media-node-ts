@@ -5,7 +5,6 @@ export interface IPost extends Document {
   description?: string;
   images: string[];
   postedBy: Types.ObjectId;
-  isDeleted: boolean;
   _id: Types.ObjectId;
 }
 
@@ -26,10 +25,6 @@ const postSchema = new mongoose.Schema<IPost>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-    },
-    isDeleted: {
-      type: Boolean,
-      default: false,
     },
   },
   { timestamps: true }

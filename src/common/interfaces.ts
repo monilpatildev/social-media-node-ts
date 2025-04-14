@@ -69,7 +69,7 @@ export interface IResponseHandlerStatics {
 
 export interface IGetAllPosts {
   posts: IPost[] | null;
-  totalPost: number;
+  totalPost?: number;
 }
 
 export interface IGetAllUsers {

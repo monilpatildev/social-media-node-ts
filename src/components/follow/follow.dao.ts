@@ -1,3 +1,4 @@
+import { Status } from "../../common/enums";
 import { IFollowQuery } from "../../common/interfaces";
 import FollowModel, { IFollow } from "./follow.model";
 
@@ -6,14 +7,6 @@ class FollowDao {
     try {
       return await FollowModel.create(followData);
     } catch (error: any) {
-      throw error;
-    }
-  };
-
-  public findFollow = async (query: IFollowQuery): Promise<IFollow | null> => {
-    try {
-      return await FollowModel.findOne(query);
-    } catch (error) {
       throw error;
     }
   };
@@ -28,25 +21,22 @@ class FollowDao {
     }
   };
 
-  public acceptFollowRequest = async (id: string): Promise<IFollow | null> => {
+  public acceptFollowRequest = async (
+    id: string,
+    data: any
+  ): Promise<IFollow | null> => {
     try {
-      return await FollowModel.findByIdAndUpdate(
-        id,
-        {
-          status: "accepted",
-        },
-        {
-          new: true,
-        }
-      );
+      return await FollowModel.findByIdAndUpdate(id, data, {
+        new: true,
+      });
     } catch (error) {
       throw error;
     }
   };
 
-  public getFollowRequests = async (pipeline: any[]): Promise<IFollow[]> => {
+  public getFollow = async (filter: any): Promise<IFollow[]> => {
     try {
-      return await FollowModel.aggregate(pipeline);
+      return await FollowModel.find(filter);
     } catch (error) {
       throw error;
     }

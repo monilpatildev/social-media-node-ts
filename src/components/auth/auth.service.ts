@@ -17,9 +17,11 @@ class AuthService {
     password: string
   ): Promise<ITokens> => {
     try {
-      const pipeline: any[] = [{ $match: { email, isDeleted: false } }];
-      const user: IUser[] = await this.UserDao.getUserByIdOrEmail(pipeline);
-
+      const user: IUser[] = await this.UserDao.getUserByIdOrEmail({
+        email: email,
+        isDeleted: false,
+      });
+      
       if (!user.length) {
         throw {
           status: HttpStatusCode.BAD_REQUEST,

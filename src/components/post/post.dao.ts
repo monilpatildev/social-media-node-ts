@@ -10,6 +10,14 @@ class PostDao {
     }
   };
 
+  public findPostById = async (filter: any): Promise<IPost[]> => {
+    try {
+      return await PostModel.find(filter);
+    } catch (error: any) {
+      throw error;
+    }
+  };
+
   public getAllPosts = async (
     pipeline: any[]
   ): Promise<IGetAllPosts | any[]> => {

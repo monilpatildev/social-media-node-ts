@@ -84,7 +84,7 @@ class UserController {
       return ResponseHandler.error(
         response,
         error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
-        error.message || "internal server error"
+        error.message || "Internal server error"
       );
     }
   };
@@ -94,7 +94,6 @@ class UserController {
     response: Response
   ): Promise<any> => {
     try {
-      console.log(request.params.id);
 
       if (!request.params.id) {
         return ResponseHandler.error(
@@ -114,7 +113,7 @@ class UserController {
       return ResponseHandler.error(
         response,
         error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
-        error.message || "internal server error"
+        error.message || "Internal server error"
       );
     }
   };
@@ -137,7 +136,7 @@ class UserController {
       return ResponseHandler.error(
         response,
         error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
-        error.message || "internal server error"
+        error.message || "Internal server error"
       );
     }
   };
@@ -158,7 +157,7 @@ class UserController {
       return ResponseHandler.error(
         response,
         error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
-        error.message || "internal server error"
+        error.message || "Internal server error"
       );
     }
   };
@@ -188,7 +187,7 @@ class UserController {
       return ResponseHandler.error(
         response,
         error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
-        error.message || "internal server error"
+        error.message || "Internal server error"
       );
     }
   };
@@ -218,7 +217,7 @@ class UserController {
       return ResponseHandler.error(
         response,
         error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
-        error.message || "internal server error"
+        error.message || "Internal server error"
       );
     }
   };
@@ -241,7 +240,7 @@ class UserController {
       return ResponseHandler.error(
         response,
         error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
-        error.message || "internal server error"
+        error.message || "Internal server error"
       );
     }
   };
@@ -271,7 +270,7 @@ class UserController {
       return ResponseHandler.error(
         response,
         error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
-        error.message || "internal server error"
+        error.message || "Internal server error"
       );
     }
   };

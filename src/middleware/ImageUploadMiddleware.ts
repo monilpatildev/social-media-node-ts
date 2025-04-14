@@ -1,86 +1,81 @@
-import { NextFunction, Request, RequestHandler, Response } from "express";
-import { uploadPosts } from "../utils/multerForPost.util";
-import { uploadProfile } from "../utils/multerForProfile.util";
+import { NextFunction, Request, Response, RequestHandler } from "express";
 import { ResponseHandler } from "../utils/responseHandler.util";
-import multer from "multer";
 import { HttpStatusCode } from "../common/httpStatusCode";
+import multer from "multer";
+import { uploader } from "../utils/uploadImage.util";
+import { ImageType } from "../common/enums";
 
 class ImageUploadMiddleware {
-  static uploadProfile = (isPatch: boolean = false): RequestHandler => {
-    return (request: Request, response: Response, next: NextFunction) => {
-      uploadProfile.single("profile")(request, response, (error: any) => {
+  static handleUpload =
+    (
+      type: ImageType,
+      options?: { fieldName?: string; maxCount?: number; isPatch?: boolean }
+    ): RequestHandler =>
+    (request: Request, response: Response, next: NextFunction) => {
+      const { fieldName = type, maxCount = 5, isPatch = false } = options || {};
+      const uploadFn =
+        type === ImageType.PROFILE
+          ? uploader.profile.single(fieldName)
+          : uploader.post.array(fieldName, maxCount);
+
+      uploadFn(request, response, (error: any) => {
         if (error) {
           if (error instanceof multer.MulterError) {
-            let errorMessage = "";
+            let message = "";
             switch (error.code) {
               case "LIMIT_UNEXPECTED_FILE":
-                errorMessage = request.file
-                  ? "Please upload a single file."
-                  : "Please use 'profile' as the field name.";
-                break;
-              default:
-                errorMessage = `Multer error: ${error.message}`;
-                break;
-            }
-            return ResponseHandler.error(
-              response,
-              HttpStatusCode.BAD_REQUEST,
-              errorMessage
-            );
-          }
-          return ResponseHandler.error(
-            response,
-            HttpStatusCode.INTERNAL_SERVER_ERROR,
-            "Unknown error occurred during file upload"
-          );
-        }
-        next();
-      });
-    };
-  };
-  static uploadPosts = (isPatch: boolean = false): RequestHandler => {
-    return (request: Request, response: Response, next: NextFunction): void => {
-      uploadPosts.array("posts", 5)(request, response, (error: any) => {
-        if (error) {
-          if (error instanceof multer.MulterError) {
-            let errorMessage = "";
-            switch (error.code) {
-              case "LIMIT_UNEXPECTED_FILE":
-                errorMessage = "Please use 'posts' as the field name.";
+                message = `use 'posts' as field name and you can upload max 5 images`;
+
                 break;
               case "LIMIT_FILE_SIZE":
-                errorMessage = "Image size could be 10 mb.";
+                message =
+                  type === ImageType.PROFILE
+                    ? "Profile picture must be under 3 MB."
+                    : "Each post image must be under 10 MB.";
                 break;
               default:
-                errorMessage = `Multer error: ${error.message}`;
-                break;
+                message = `${error.message}`;
             }
             return ResponseHandler.error(
               response,
               HttpStatusCode.BAD_REQUEST,
-              errorMessage
+              message
             );
           }
           return ResponseHandler.error(
             response,
             HttpStatusCode.BAD_REQUEST,
-            "Only images (JPG, PNG, WebP, or GIF), up to 5 images, are allowed."
+            `Invalid file upload: ${error.message}`
           );
         }
 
-        const files = request.files as Express.Multer.File[];
-        if ((!files || !files.length) && !isPatch) {
-          return ResponseHandler.error(
-            response,
-            HttpStatusCode.BAD_REQUEST,
-            "At least one image is required."
-          );
+        if (type === ImageType.POST) {
+          const files = request.files as Express.Multer.File[];
+          if ((!files || !files.length) && !isPatch) {
+            return ResponseHandler.error(
+              response,
+              HttpStatusCode.BAD_REQUEST,
+              "At least one image is required."
+            );
+          }
+          if (files) {
+            const fileNamesSet = new Set<string>();
+            for (const file of files) {
+              if (fileNamesSet.has(file.originalname)) {
+                return ResponseHandler.error(
+                  response,
+                  HttpStatusCode.BAD_REQUEST,
+                  "Duplicate image names are not allowed."
+                );
+              }
+              fileNamesSet.add(file.originalname);
+            }
+          }
         }
 
         next();
       });
     };
-  };
 }
 
 export default ImageUploadMiddleware;

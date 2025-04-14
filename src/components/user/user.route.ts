@@ -2,7 +2,8 @@ import { Router } from "express";
 import UserController from "./user.controller";
 import AuthMiddleware from "../../middleware/authVerification";
 import ImageUploadMiddleware from "../../middleware/ImageUploadMiddleware";
-import { uploadProfile } from "../../utils/multerForProfile.util";
+import { ImageType } from "../../common/enums";
+
 
 const userRoute: Router = Router();
 
@@ -10,7 +11,7 @@ userRoute.get("/", AuthMiddleware.authenticate(), UserController.getAllUsers);
 userRoute.patch(
   "/profile",
   AuthMiddleware.authenticate(),
-  ImageUploadMiddleware.uploadProfile(),
+  ImageUploadMiddleware.handleUpload( ImageType.PROFILE, { fieldName: "profile", isPatch: true }),
   UserController.updateUser
 );
 userRoute.get(

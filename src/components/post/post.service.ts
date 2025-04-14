@@ -9,10 +9,10 @@ import FollowDao from "../follow/follow.dao";
 import path from "path";
 import addToPipeline from "../../service/pipeline.service";
 import { IPost } from "./post.model";
-import { updateFileName } from "../../utils/multerForPost.util";
 import { promises as fs } from "fs";
 import { Status } from "../../common/enums";
 import { HttpStatusCode } from "../../common/httpStatusCode";
+import { updateFileName } from "../../utils/uploadImage.util";
 
 class PostService {
   private postDao: PostDao;
@@ -29,17 +29,6 @@ class PostService {
   ): Promise<IPost> => {
     try {
       let imageStore: string[] = [];
-      if (files) {
-        imageStore = files.map((file: IUploadedFile) => file.originalname);
-        const uniqueNames = new Set(imageStore);
-        if (uniqueNames.size !== imageStore.length) {
-          throw {
-            status: HttpStatusCode.BAD_REQUEST,
-            message: "You cannot upload duplicate image names",
-          };
-        }
-      }
-
       const newPostData = {
         postedBy: new Types.ObjectId(userId),
         title: postData.title,
@@ -83,53 +72,30 @@ class PostService {
     postId: string,
     files?: IUploadedFile[]
   ): Promise<IPost> => {
-    try {
-      if (!isObjectIdOrHexString(postId)) {
-        throw {
-          status: HttpStatusCode.BAD_REQUEST,
-          message: "Invalid post id",
-        };
-      }
-
-      const pipeline = [{ $match: { _id: new Types.ObjectId(postId) } }];
-
-      const postDetails: IPost[] = await this.postDao.getPostById(pipeline);
-
-      if (!postDetails.length) {
-        throw { status: HttpStatusCode.NOT_FOUND, message: "Post not found!!" };
-      }
-
-      const newPostData = {} as IPost;
-      if (postData.title) newPostData.title = postData.title;
-      if (postData.description) newPostData.description = postData.description;
-
-      if (files && files.length) {
-        const seen = new Set<string>();
-        const dirPath = path.resolve(
-          __dirname,
-          `../../uploads/users-post/${userId}/${postId}`
-        );
-
-        const newImagePathArray = await Promise.all(
-          files.map(async (file: IUploadedFile) => {
-            const fileName = file.originalname;
-            if (seen.has(fileName)) {
-              throw {
-                status: HttpStatusCode.BAD_REQUEST,
-                message: "You cannot upload duplicate image names",
-              };
-            }
-            seen.add(fileName);
-            return path.join(dirPath, fileName);
-          })
-        );
-        newPostData.images = newImagePathArray;
-      }
-
-      return (await this.postDao.updatePost(postId, newPostData)) as IPost;
-    } catch (error: any) {
-      throw error;
+    if (!isObjectIdOrHexString(postId)) {
+      throw {
+        status: HttpStatusCode.BAD_REQUEST,
+        message: "Invalid post id",
+      };
     }
+
+    const postDetails: IPost[] = await this.postDao.findPostById({
+      _id: new Types.ObjectId(postId),
+    });
+    if (!postDetails.length) {
+      throw { status: HttpStatusCode.NOT_FOUND, message: "Post not found!!" };
+    }
+
+    const newPostData = {} as IPost;
+    if (postData.title) newPostData.title = postData.title;
+    if (postData.description) newPostData.description = postData.description;
+    if (files && files.length) {
+      newPostData.images = files.map((file: IUploadedFile) => {
+        return `uploads/users-post/${userId}/${postId}/${file.originalname}`;
+      });
+    }
+
+    return (await this.postDao.updatePost(postId, newPostData)) as IPost;
   };
 
   public getPost = async (id: string, userId: string): Promise<IPost[]> => {
@@ -141,7 +107,9 @@ class PostService {
         };
       }
       const pipeline: any[] = [
-        { $match: { _id: new Types.ObjectId(id) } },
+        {
+          $match: { _id: new Types.ObjectId(id) },
+        },
         {
           $lookup: {
             from: "users",
@@ -150,9 +118,33 @@ class PostService {
             as: "postedBy",
           },
         },
+        { $unwind: "$postedBy" },
         {
-          $addFields: {
-            postedBy: { $first: "$postedBy" },
+          $lookup: {
+            from: "follows",
+            let: { postedById: "$postedBy._id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$userId", new Types.ObjectId(userId)] },
+                      { $eq: ["$followingId", "$$postedById"] },
+                      { $eq: ["$status", Status.ACCEPTED] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: "isFollowing",
+          },
+        },
+        {
+          $match: {
+            $or: [
+              { "postedBy._id": new Types.ObjectId(userId) },
+              { isFollowing: { $ne: [] } },
+            ],
           },
         },
         {
@@ -162,29 +154,18 @@ class PostService {
             "postedBy.isDeleted": 0,
             "postedBy.createdAt": 0,
             "postedBy.updatedAt": 0,
+            "postedBy.password": 0,
+            isFollowing: 0,
           },
         },
       ];
 
       const postDetails: IPost[] = await this.postDao.getPostById(pipeline);
+
       if (!postDetails.length) {
         throw { status: HttpStatusCode.NOT_FOUND, message: "Post not found!" };
       }
-      const postedById = postDetails[0].postedBy._id.toString();
-      if (userId !== postedById) {
-        const follow = await this.followDao.findFollow({
-          userId: new Types.ObjectId(userId),
-          followingId: new Types.ObjectId(postedById),
-          status: Status.ACCEPTED,
-        });
 
-        if (!follow) {
-          throw {
-            status: HttpStatusCode.NOT_FOUND,
-            message: "Post not found!",
-          };
-        }
-      }
       return postDetails;
     } catch (error: any) {
       throw error;
@@ -215,6 +196,7 @@ class PostService {
 
       const pipeline: any[] = [];
 
+      // 1. Lookup the follows collection to get all followings for the current user.
       pipeline.push({
         $lookup: {
           from: "follows",
@@ -236,27 +218,27 @@ class PostService {
         },
       });
 
-      pipeline.push({
-        $addFields: {
-          followingIds: {
-            $map: { input: "$followings", as: "f", in: "$$f.followingId" },
+      pipeline.push(
+        {
+          $addFields: {
+            followingIds: {
+              $map: { input: "$followings", as: "f", in: "$$f.followingId" },
+            },
           },
         },
-      });
-
-      pipeline.push({
-        $addFields: {
-          followingIds: {
-            $concatArrays: ["$followingIds", [new Types.ObjectId(userId)]],
+        {
+          $addFields: {
+            followingIds: {
+              $concatArrays: ["$followingIds", [new Types.ObjectId(userId)]],
+            },
           },
         },
-      });
-
-      pipeline.push({
-        $match: {
-          $expr: { $in: ["$postedBy", "$followingIds"] },
-        },
-      });
+        {
+          $match: {
+            $expr: { $in: ["$postedBy", "$followingIds"] },
+          },
+        }
+      );
 
       pipeline.push(
         {
@@ -273,7 +255,6 @@ class PostService {
         {
           $project: {
             __v: 0,
-
             "postedBy.__v": 0,
             "postedBy.isDeleted": 0,
             "postedBy.createdAt": 0,
@@ -284,6 +265,7 @@ class PostService {
           },
         }
       );
+
       pipeline.push(
         addToPipeline(
           [query.searchText, query.searchText, query.searchText],
@@ -291,6 +273,7 @@ class PostService {
           true
         )
       );
+
       pipeline.push({
         $facet: {
           posts: [
@@ -330,15 +313,18 @@ class PostService {
           message: "Invalid post id",
         };
       }
-      const pipeline: any[] = [{ $match: { _id: new Types.ObjectId(postId) } }];
 
-      const postDetails: IPost[] = await this.postDao.getPostById(pipeline);
+      const postDetails: IPost[] = await this.postDao.findPostById({
+        _id: new Types.ObjectId(postId),
+      });
+
       if (postDetails[0].postedBy.toString() !== userId) {
         throw {
-          status: HttpStatusCode.BAD_REQUEST,
+          status: HttpStatusCode.UNAUTHORIZED,
           message: "You can not delete this post",
         };
       }
+
       if (!postDetails.length) {
         throw { status: HttpStatusCode.NOT_FOUND, message: "Post not found!" };
       }

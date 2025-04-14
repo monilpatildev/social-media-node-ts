@@ -10,9 +10,9 @@ class UserDao {
     }
   };
 
-  public getUserByIdOrEmail = async (pipeline: any[]): Promise<IUser[]> => {
+  public getUserByIdOrEmail = async (filter: any): Promise<IUser[]> => {
     try {
-      return await UserModel.aggregate(pipeline);
+      return await UserModel.find(filter);
     } catch (error: any) {
       throw error;
     }
@@ -28,23 +28,9 @@ class UserDao {
     }
   };
 
-  public deleteUserById = async (id: string): Promise<IUser | null> => {
-    try {
-      return await UserModel.findByIdAndUpdate(
-        id,
-        { isDeleted: true },
-        {
-          new: true,
-        }
-      );
-    } catch (error: any) {
-      throw error;
-    }
-  };
-
   public updateUserById = async (
     id: string,
-    data: IUser
+    data: IUser | any
   ): Promise<IUser | null> => {
     try {
       return await UserModel.findByIdAndUpdate(id, data, {

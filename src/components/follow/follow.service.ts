@@ -32,39 +32,30 @@ class FollowService {
           message: "You cannot send request to yourself",
         };
       }
-      const pipeline = [
-        {
-          $match: {
-            _id: new Types.ObjectId(followingId),
-            isDeleted: false,
-          },
-        },
-        {
-          $project: {
-            isPrivate: 1,
-          },
-        },
-      ];
 
-      const foundUserResult: IUser[] = await this.userDao.getUserByIdOrEmail(
-        pipeline
-      );
+      const foundUserResult: IUser[] = await this.userDao.getUserByIdOrEmail({
+        _id: followingId,
+        isDeleted: false,
+      });
 
       if (!foundUserResult || !foundUserResult.length) {
         throw { status: HttpStatusCode.NOT_FOUND, message: "User not found" };
       }
 
-      const existingFollow: IFollow | null = await this.followDao.findFollow({
+      const existingFollow: IFollow[] | null = await this.followDao.getFollow({
         userId: new Types.ObjectId(userId),
         followingId: new Types.ObjectId(followingId),
       });
 
-      if (existingFollow?.status === Status.ACCEPTED) {
+      if (existingFollow[0]?.status === Status.ACCEPTED) {
         throw {
           status: HttpStatusCode.BAD_REQUEST,
           message: "You are already following this user",
         };
-      } else if (existingFollow && existingFollow?.status === Status.PENDING) {
+      } else if (
+        existingFollow &&
+        existingFollow[0]?.status === Status.PENDING
+      ) {
         throw {
           status: HttpStatusCode.BAD_REQUEST,
           message: "You have already requested this user",
@@ -107,13 +98,16 @@ class FollowService {
           message: "Invalid user id",
         };
       }
-      const followRecord: IFollow | null = await this.followDao.findFollow({
+      const followRecord: IFollow[] | null = await this.followDao.getFollow({
         userId: new Types.ObjectId(userId),
         followingId: new Types.ObjectId(followingId),
       });
 
-      if (!followRecord) {
-        throw { status: HttpStatusCode.NOT_FOUND, message: "User not found" };
+      if (!followRecord.length) {
+        throw {
+          status: HttpStatusCode.UNAUTHORIZED,
+          message: "You can not unfollow this user!",
+        };
       }
 
       const removedRecord: IFollow | null = await this.followDao.deleteFollow({
@@ -132,22 +126,9 @@ class FollowService {
     followingId: string
   ): Promise<IFollow> => {
     try {
-      const pipeline = [
-        {
-          $match: {
-            _id: new Types.ObjectId(userId),
-          },
-        },
-        {
-          $project: {
-            isPrivate: 1,
-          },
-        },
-      ];
-
-      const foundUserResult: IUser[] = await this.userDao.getUserByIdOrEmail(
-        pipeline
-      );
+      const foundUserResult: IUser[] = await this.userDao.getUserByIdOrEmail({
+        _id: new Types.ObjectId(userId),
+      });
       if (foundUserResult[0].isPrivate === false) {
         throw {
           status: HttpStatusCode.BAD_REQUEST,
@@ -162,25 +143,28 @@ class FollowService {
         };
       }
 
-      const existingFollowRequest: IFollow | null =
-        await this.followDao.findFollow({
+      const existingFollowRequest: IFollow[] | null =
+        await this.followDao.getFollow({
           userId: new Types.ObjectId(followingId),
           followingId: new Types.ObjectId(userId),
         });
 
-      if (existingFollowRequest?.status === Status.ACCEPTED) {
+      if (existingFollowRequest[0]?.status === Status.ACCEPTED) {
         throw {
           status: HttpStatusCode.BAD_REQUEST,
           message: "Request already accepted",
         };
-      } else if (!existingFollowRequest) {
+      } else if (!existingFollowRequest.length) {
         throw {
           status: HttpStatusCode.BAD_REQUEST,
           message: "Request not found",
         };
       }
       return (await this.followDao.acceptFollowRequest(
-        existingFollowRequest._id?.toString()
+        existingFollowRequest[0]._id?.toString(),
+        {
+          status: Status.ACCEPTED,
+        }
       )) as IFollow;
     } catch (error: any) {
       throw error;
@@ -189,22 +173,10 @@ class FollowService {
 
   public getRequest = async (userId: string): Promise<IFollow[]> => {
     try {
-      const pipeline = [
-        {
-          $match: {
-            _id: new Types.ObjectId(userId),
-          },
-        },
-        {
-          $project: {
-            isPrivate: 1,
-          },
-        },
-      ];
+      const foundUserResult: IUser[] = await this.userDao.getUserByIdOrEmail({
+        _id: new Types.ObjectId(userId),
+      });
 
-      const foundUserResult: IUser[] = await this.userDao.getUserByIdOrEmail(
-        pipeline
-      );
       if (foundUserResult[0].isPrivate === false) {
         throw {
           status: HttpStatusCode.BAD_REQUEST,
@@ -212,18 +184,12 @@ class FollowService {
         };
       }
 
-      const getRequestPipeline = [
-        {
-          $match: {
-            followingId: new Types.ObjectId(userId),
-            status: Status.PENDING,
-          },
-        },
-      ];
-      const allRequests = await this.followDao.getFollowRequests(
-        getRequestPipeline
-      );
-      if (!allRequests) {
+      const allRequests = await this.followDao.getFollow({
+        followingId: new Types.ObjectId(userId),
+        status: Status.PENDING,
+      });
+
+      if (!allRequests.length) {
         throw {
           status: HttpStatusCode.NOT_FOUND,
           message: "No requests found",

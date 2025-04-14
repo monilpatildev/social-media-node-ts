@@ -11,6 +11,7 @@ import addToPipeline from "../../service/pipeline.service";
 import path from "path";
 import fs from "fs";
 import { HttpStatusCode } from "../../common/httpStatusCode";
+import { Status } from "../../common/enums";
 
 class UserService {
   private userDao: UserDao;
@@ -21,16 +22,14 @@ class UserService {
 
   public createUser = async (userData: IUser): Promise<IUser> => {
     try {
-      const pipeline: any[] = [
-        {
-          $match: {
-            $or: [{ email: userData.email }, { username: userData.username }],
-          },
-        },
-      ];
-      const existUser: IUser[] = await this.userDao.getUserByIdOrEmail(
-        pipeline
-      );
+      const filter = {
+        $and: [
+          { $or: [{ email: userData.email }, { username: userData.username }] },
+          { isDeleted: false },
+        ],
+      };
+      const existUser: IUser[] = await this.userDao.getUserByIdOrEmail(filter);
+
       if (existUser.length) {
         throw {
           status: HttpStatusCode.BAD_REQUEST,
@@ -41,6 +40,7 @@ class UserService {
       const hashedPassword: string = await passwordManager.hashPassword(
         password
       );
+
       const user = {
         firstName,
         lastName,
@@ -78,7 +78,7 @@ class UserService {
         if (file.path !== filePath) {
           fs.renameSync(file.path, filePath);
         }
-        userData.profile = filePath;
+        userData.profile = `uploads/users-profile-picture/${userId}/${file.originalname}`;
       }
 
       const updatedUser: IUser | null = await this.userDao.updateUserById(
@@ -111,22 +111,49 @@ class UserService {
 
       const pipeline: any[] = [
         {
-          $match: { _id: new Types.ObjectId(id), isDeleted: false },
-        },
-        {
-          $lookup: {
-            from: "follows",
-            localField: "_id",
-            foreignField: "userId",
-            as: "following",
+          $match: {
+            _id: new Types.ObjectId(id),
+            isDeleted: false,
           },
         },
         {
           $lookup: {
             from: "follows",
-            localField: "_id",
-            foreignField: "followingId",
-            as: "followers",
+            let: { userId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $or: [
+                      { $eq: ["$userId", "$$userId"] },
+                      { $eq: ["$followingId", "$$userId"] },
+                    ],
+                  },
+                },
+              },
+              {
+                $project: { __v: 0 },
+              },
+            ],
+            as: "followData",
+          },
+        },
+        {
+          $addFields: {
+            following: {
+              $filter: {
+                input: "$followData",
+                as: "f",
+                cond: { $eq: ["$$f.userId", "$_id"] },
+              },
+            },
+            followers: {
+              $filter: {
+                input: "$followData",
+                as: "f",
+                cond: { $eq: ["$$f.followingId", "$_id"] },
+              },
+            },
           },
         },
         {
@@ -137,18 +164,17 @@ class UserService {
         },
         {
           $project: {
+            followData: 0,
             __v: 0,
             isDeleted: 0,
             password: 0,
             createdAt: 0,
             updatedAt: 0,
-            "following.__v": 0,
-            "followers.__v": 0,
           },
         },
       ];
 
-      const userDetails: IUser[] = await this.userDao.getUserByIdOrEmail(
+      const userDetails: IUser[] | any = await this.userDao.getAllUsers(
         pipeline
       );
 
@@ -167,18 +193,68 @@ class UserService {
 
       const queryArray = [query.firstName, query.username];
       const fieldsArray = ["firstName", "username"];
-
       pipeline.push(addToPipeline(queryArray, fieldsArray));
 
       pipeline.push({
-        $project: {
-          __v: 0,
-          isDeleted: 0,
-          password: 0,
-          updatedAt: 0,
-          createdAt: 0,
+        $lookup: {
+          from: "follows",
+          let: { myId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ["$userId", "$$myId"] },
+                    { $eq: ["$followingId", "$$myId"] },
+                  ],
+                },
+              },
+            },
+            {
+              $project: { __v: 0 },
+            },
+          ],
+          as: "followData",
         },
       });
+
+      pipeline.push({
+        $addFields: {
+          following: {
+            $filter: {
+              input: "$followData",
+              as: "f",
+              cond: { $eq: ["$$f.userId", "$_id"] },
+            },
+          },
+          followers: {
+            $filter: {
+              input: "$followData",
+              as: "f",
+              cond: { $eq: ["$$f.followingId", "$_id"] },
+            },
+          },
+        },
+      });
+
+      pipeline.push(
+        {
+          $addFields: {
+            totalFollowing: { $size: "$following" },
+            totalFollowers: { $size: "$followers" },
+          },
+        },
+        {
+          $project: {
+            __v: 0,
+            isDeleted: 0,
+            password: 0,
+            updatedAt: 0,
+            createdAt: 0,
+            followData: 0,
+          },
+        }
+      );
 
       if (query.limit === "0") {
         throw {
@@ -227,9 +303,14 @@ class UserService {
 
   public deleteUser = async (id: string): Promise<IUser> => {
     try {
-      const deleteUser = await this.userDao.deleteUserById(id);
+      const deleteUser = await this.userDao.updateUserById(id, {
+        isDeleted: true,
+      });
       if (!deleteUser) {
-        throw { status: HttpStatusCode.NOT_FOUND, message: "User not found!" };
+        throw {
+          status: HttpStatusCode.INTERNAL_SERVER_ERROR,
+          message: "Internal server error",
+        };
       }
       return deleteUser;
     } catch (error: any) {

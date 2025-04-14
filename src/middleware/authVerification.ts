@@ -45,16 +45,12 @@ class AuthMiddleware {
                 "Invalid token"
               );
             }
-            const pipeline: any = [
-              {
-                $match: {
-                  email: verifyRefreshToken.email,
-                  _id: new Types.ObjectId(verifyRefreshToken._id),
-                  isDeleted: false,
-                },
-              },
-            ];
-            const UserData = await this.UserDao.getUserByIdOrEmail(pipeline);
+
+            const UserData = await this.UserDao.getUserByIdOrEmail({
+              email: verifyRefreshToken.email,
+              _id: new Types.ObjectId(verifyRefreshToken._id),
+              isDeleted: false,
+            });
             if (!UserData.length) {
               return ResponseHandler.error(
                 response,

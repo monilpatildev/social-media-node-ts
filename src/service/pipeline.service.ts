@@ -3,24 +3,29 @@ const addToPipeline = (
   fieldsArray: string[],
   isPost: boolean = false
 ): object => {
-  const conditions = queries.reduce((acc, query, index) => {
-    if (!isPost) {
-      acc.push({
-        isDeleted: false,
-      });
-    }
-    if (query) {
-      acc.push({
-        [fieldsArray[index]]: { $regex: query, $options: "i" },
-      });
-    }
+  if (queries.length === 0) return { $match: {} };
 
-    return acc;
-  }, [] as object[]);
+  const conditions: object[] = !isPost ? [{ isDeleted: false }] : [];
+  const conditionSet = new Set<string>();
 
-  if (conditions.length === 0) {
-    return { $match: {} };
+  if (!isPost) {
+    conditionSet.add(JSON.stringify({ isDeleted: false }));
   }
+  for (const [index, query] of queries.entries()) {
+    if (query) {
+      const newCondition = {
+        [fieldsArray[index]]: { $regex: query, $options: "i" },
+      };
+      const conditionStr = JSON.stringify(newCondition);
+
+      if (!conditionSet.has(conditionStr)) {
+        conditionSet.add(conditionStr);
+        conditions.push(newCondition);
+      }
+    }
+  }
+
+  if (conditions.length === 0) return { $match: {} };
 
   return isPost
     ? { $match: { $or: conditions } }
