@@ -146,14 +146,24 @@ class UserService {
               $filter: {
                 input: "$followData",
                 as: "f",
-                cond: { $eq: ["$$f.userId", "$_id"] },
+                cond: {
+                  $and: [
+                    { $eq: ["$$f.userId", "$_id"] },
+                    { $eq: ["$$f.status", Status.ACCEPTED] },
+                  ],
+                },
               },
             },
             followers: {
               $filter: {
                 input: "$followData",
                 as: "f",
-                cond: { $eq: ["$$f.followingId", "$_id"] },
+                cond: {
+                  $and: [
+                    { $eq: ["$$f.followingId", "$_id"] },
+                    { $eq: ["$$f.status", Status.ACCEPTED] },
+                  ],
+                },
               },
             },
           },
@@ -226,14 +236,24 @@ class UserService {
             $filter: {
               input: "$followData",
               as: "f",
-              cond: { $eq: ["$$f.userId", "$_id"] },
+              cond: {
+                $and: [
+                  { $eq: ["$$f.userId", "$_id"] },
+                  { $eq: ["$$f.status", Status.ACCEPTED] },
+                ],
+              },
             },
           },
           followers: {
             $filter: {
               input: "$followData",
               as: "f",
-              cond: { $eq: ["$$f.followingId", "$_id"] },
+              cond: {
+                $and: [
+                  { $eq: ["$$f.followingId", "$_id"] },
+                  { $eq: ["$$f.status", Status.ACCEPTED] },
+                ],
+              },
             },
           },
         },

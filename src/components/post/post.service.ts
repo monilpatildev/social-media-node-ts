@@ -9,7 +9,7 @@ import FollowDao from "../follow/follow.dao";
 import path from "path";
 import addToPipeline from "../../service/pipeline.service";
 import { IPost } from "./post.model";
-import { promises as fs } from "fs";
+import fsm, { promises as fs } from "fs";
 import { Status } from "../../common/enums";
 import { HttpStatusCode } from "../../common/httpStatusCode";
 import { updateFileName } from "../../utils/uploadImage.util";
@@ -79,11 +79,18 @@ class PostService {
       };
     }
 
-    const postDetails: IPost[] = await this.postDao.findPostById({
+    const postDetails: IPost | null = await this.postDao.findPostById({
       _id: new Types.ObjectId(postId),
     });
-    if (!postDetails.length) {
+    if (!postDetails) {
       throw { status: HttpStatusCode.NOT_FOUND, message: "Post not found!!" };
+    }
+
+    if (postDetails.postedBy.toString() !== userId) {
+      throw {
+        status: HttpStatusCode.UNAUTHORIZED,
+        message: "You cannot update this post!",
+      };
     }
 
     const newPostData = {} as IPost;
@@ -110,56 +117,7 @@ class PostService {
         {
           $match: { _id: new Types.ObjectId(id) },
         },
-        {
-          $lookup: {
-            from: "users",
-            localField: "postedBy",
-            foreignField: "_id",
-            as: "postedBy",
-          },
-        },
-        { $unwind: "$postedBy" },
-        {
-          $lookup: {
-            from: "follows",
-            let: { postedById: "$postedBy._id" },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      { $eq: ["$userId", new Types.ObjectId(userId)] },
-                      { $eq: ["$followingId", "$$postedById"] },
-                      { $eq: ["$status", Status.ACCEPTED] },
-                    ],
-                  },
-                },
-              },
-            ],
-            as: "isFollowing",
-          },
-        },
-        {
-          $match: {
-            $or: [
-              { "postedBy._id": new Types.ObjectId(userId) },
-              { isFollowing: { $ne: [] } },
-            ],
-          },
-        },
-        {
-          $project: {
-            __v: 0,
-            "postedBy.__v": 0,
-            "postedBy.isDeleted": 0,
-            "postedBy.createdAt": 0,
-            "postedBy.updatedAt": 0,
-            "postedBy.password": 0,
-            isFollowing: 0,
-          },
-        },
       ];
-
       const postDetails: IPost[] = await this.postDao.getPostById(pipeline);
 
       if (!postDetails.length) {
@@ -196,7 +154,6 @@ class PostService {
 
       const pipeline: any[] = [];
 
-      // 1. Lookup the follows collection to get all followings for the current user.
       pipeline.push(
         {
           $lookup: {
@@ -310,26 +267,64 @@ class PostService {
         };
       }
 
-      const postDetails: IPost[] = await this.postDao.findPostById({
+      const postDetails: IPost | null = await this.postDao.findPostById({
         _id: new Types.ObjectId(postId),
       });
 
-      if (postDetails[0].postedBy.toString() !== userId) {
+      if (!postDetails) {
+        throw { status: HttpStatusCode.NOT_FOUND, message: "Post not found!" };
+      }
+      if (postDetails.postedBy.toString() !== userId) {
         throw {
           status: HttpStatusCode.UNAUTHORIZED,
           message: "You can not delete this post",
         };
       }
 
-      if (!postDetails.length) {
-        throw { status: HttpStatusCode.NOT_FOUND, message: "Post not found!" };
-      }
       const dirPath = path.resolve(
         __dirname,
         `../../uploads/users-post/${userId}/${postId}`
       );
       await fs.rm(dirPath, { recursive: true, force: true });
       return await this.postDao.deletePost(postId);
+    } catch (error: any) {
+      throw error;
+    }
+  };
+
+  public getPostImage = async (
+    id: string,
+    userId: string,
+    imageString: string
+  ): Promise<Buffer> => {
+    try {
+      if (!isObjectIdOrHexString(id)) {
+        throw {
+          status: HttpStatusCode.BAD_REQUEST,
+          message: "Invalid post id",
+        };
+      }
+
+      const postDetails: IPost | null = await this.postDao.findPostById({
+        _id: new Types.ObjectId(id),
+      });
+
+      if (!postDetails) {
+        throw { status: HttpStatusCode.NOT_FOUND, message: "Post not found!" };
+      }
+
+      const imagePath = postDetails.images.find(
+        (imgPath) => imgPath === imageString
+      );
+
+      if (!imagePath) {
+        throw { status: HttpStatusCode.NOT_FOUND, message: "Image not found!" };
+      }
+
+      const resolvedPath = path.resolve(__dirname, `../../${imagePath}`);
+
+      const fileData: Buffer = await fs.readFile(resolvedPath);
+      return fileData;
     } catch (error: any) {
       throw error;
     }

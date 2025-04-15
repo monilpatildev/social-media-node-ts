@@ -3,19 +3,13 @@ import { IAuthenticateQuery } from "../../common/interfaces";
 
 export const validateEmailPassword = (data: IAuthenticateQuery) => {
   const patchSchema = Joi.object({
-    email: Joi.string()
-      .trim()
-      .empty(" ")
-      .required()
-      .email()
-      .lowercase()
-      .messages({
-        "string.base": "email must be a string",
-        "string.email": "email must be a valid email",
-        "string.empty": "email cannot be empty",
-        "any.required": "email is required",
-      }),
-    password: Joi.string().trim().empty(" ").required().min(8).messages({
+    email: Joi.string().trim().required().email().lowercase().messages({
+      "string.base": "email must be a string",
+      "string.email": "email must be a valid email",
+      "string.empty": "email cannot be empty",
+      "any.required": "email is required",
+    }),
+    password: Joi.string().trim().required().min(8).messages({
       "string.base": "password must be a string",
       "string.empty": "password cannot be empty",
       "any.required": "password is required",

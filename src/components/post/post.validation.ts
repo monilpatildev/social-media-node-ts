@@ -5,7 +5,6 @@ export const validatePost = (data: IPost, isPatch: boolean = false) => {
   const postSchema = Joi.object({
     title: Joi.string()
       .trim()
-      .empty("")
       .max(100)
       .when("$isPatch", {
         is: true,
@@ -20,7 +19,6 @@ export const validatePost = (data: IPost, isPatch: boolean = false) => {
       }),
     description: Joi.string()
       .trim()
-      .empty("")
       .max(500)
       .when("$isPatch", {
         is: true,

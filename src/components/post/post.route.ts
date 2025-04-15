@@ -27,6 +27,11 @@ postRoute.patch(
 );
 postRoute.get("/", AuthMiddleware.authenticate(), PostController.getAllPost);
 postRoute.get("/:id", AuthMiddleware.authenticate(), PostController.getPost);
+postRoute.get(
+  "/post-image/:id",
+  AuthMiddleware.authenticate(),
+  PostController.getPostImage
+);
 postRoute.delete(
   "/:id",
   AuthMiddleware.authenticate(),

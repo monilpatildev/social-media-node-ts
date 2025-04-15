@@ -7,6 +7,7 @@ import { IPost } from "./post.model";
 import { IGetAllPosts } from "../../common/interfaces";
 import { HttpStatusCode } from "../../common/httpStatusCode";
 import { CustomRequest } from "../../middleware/authVerification";
+import path from "path";
 
 class PostController {
   private postService: PostService;
@@ -185,6 +186,41 @@ class PostController {
         HttpStatusCode.OK,
         "Post deleted successFully!"
       );
+    } catch (error: any) {
+      return ResponseHandler.error(
+        response,
+        error.status || HttpStatusCode.INTERNAL_SERVER_ERROR,
+        error.message || "Internal server error"
+      );
+    }
+  };
+
+  public getPostImage = async (
+    request: Request,
+    response: Response
+  ): Promise<any> => {
+    try {
+      if (!request.params.id) {
+        return ResponseHandler.error(
+          response,
+          HttpStatusCode.BAD_REQUEST,
+          "Post id required"
+        );
+      }
+      if (!request.body.path) {
+        return ResponseHandler.error(
+          response,
+          HttpStatusCode.BAD_REQUEST,
+          "Path is required"
+        );
+      }
+      const image: Buffer = await this.postService.getPostImage(
+        request.params.id,
+        (request as CustomRequest).userData._id,
+        request.body.path
+      );
+      response.contentType("image/jpeg");
+      return response.send(image);
     } catch (error: any) {
       return ResponseHandler.error(
         response,

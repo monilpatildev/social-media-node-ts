@@ -10,9 +10,9 @@ class PostDao {
     }
   };
 
-  public findPostById = async (filter: any): Promise<IPost[]> => {
+  public findPostById = async (filter: any): Promise<IPost | null> => {
     try {
-      return await PostModel.find(filter);
+      return await PostModel.findOne(filter);
     } catch (error: any) {
       throw error;
     }

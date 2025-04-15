@@ -5,7 +5,6 @@ export const validateUser = (data: IUser, isPatch: boolean = false) => {
   const userSchema = Joi.object({
     firstName: Joi.string()
       .trim()
-      .empty("")
       .when("$isPatch", {
         is: true,
         then: Joi.string().optional(),
@@ -18,7 +17,6 @@ export const validateUser = (data: IUser, isPatch: boolean = false) => {
       }),
     lastName: Joi.string()
       .trim()
-      .empty("")
       .when("$isPatch", {
         is: true,
         then: Joi.string().optional(),
@@ -31,7 +29,6 @@ export const validateUser = (data: IUser, isPatch: boolean = false) => {
       }),
     email: Joi.string()
       .trim()
-      .empty("")
       .email()
       .lowercase()
       .when("$isPatch", {
@@ -47,7 +44,6 @@ export const validateUser = (data: IUser, isPatch: boolean = false) => {
       }),
     password: Joi.string()
       .trim()
-      .empty("")
       .min(8)
       .when("$isPatch", {
         is: true,
@@ -62,7 +58,6 @@ export const validateUser = (data: IUser, isPatch: boolean = false) => {
       }),
     username: Joi.string()
       .trim()
-      .empty("")
       .when("$isPatch", {
         is: true,
         then: Joi.string().optional(),
